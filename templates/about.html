@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_hero %}
+
+{% block content %}
+{{ page_hero("About Us", "ExamPrep Pro helps students revise consistently, practise under exam conditions, and understand performance trends before national examinations.", [("View Subjects", "subjects", ""), ("Contact Us", "contact", "button-secondary")]) }}
+
+<section class="content-band two-column">
+    <div>
+        <p class="eyebrow">Purpose</p>
+        <h2>Built for structured exam preparation</h2>
+    </div>
+    <p>Students get one place for materials, papers, timed tests, results, and reminders. Administrators get connected management pages for users, subjects, materials, questions, tests, and reports.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "macros.html" import admin_shell with context %}
+
+{% block content %}
+{% call admin_shell(title) %}
+    <div class="dashboard-grid">
+        <article class="panel">
+            <h2>Performance Summary</h2>
+            <p>Average student score across recent mock tests is 78%.</p>
+            <a class="button button-small" href="{{ url_for('student_results') }}">Review Results</a>
+        </article>
+        <article class="panel">
+            <h2>Recent Results</h2>
+            {% for result in results %}
+                <div class="list-row">
+                    <span>{{ result.test }}</span>
+                    <strong>{{ result.score }}</strong>
+                </div>
+            {% endfor %}
+        </article>
+    </div>
+{% endcall %}
+{% endblock %}

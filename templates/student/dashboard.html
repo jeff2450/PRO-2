@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "macros.html" import student_shell with context %}
+
+{% block content %}
+{% call student_shell(title) %}
+    <section class="dashboard-hero">
+        <div class="hero-metrics">
+            <article><strong>{{ stats.tests_taken }}</strong><span>Tests taken</span></article>
+            <article><strong>{{ stats.average_score }}</strong><span>Avg score</span></article>
+            <article><strong>{{ stats.materials_read }}</strong><span>Materials</span></article>
+        </div>
+        <div>
+            <h1>Welcome back, Japhet!</h1>
+            <p>Keep up the great work. Your next mock test is available now.</p>
+        </div>
+        <div class="hero-actions">
+            <a class="button hero-button" href="{{ url_for('student_mock_tests') }}"><span aria-hidden="true">+</span>Start Mock Test</a>
+            <a class="button hero-button" href="{{ url_for('student_materials') }}"><span aria-hidden="true">#</span>Study Materials</a>
+        </div>
+    </section>
+
+    <div class="stats-grid compact dashboard-cards">
+        <article><span>Total tests</span><strong>{{ stats.tests_taken }}</strong><small>+2 this week</small></article>
+        <article><span>Average score</span><strong class="success-text">{{ stats.average_score }}</strong><small>Keep it up!</small></article>
+        <article><span>Best subject</span><strong class="warning-text">Maths</strong><small>87% avg</small></article>
+        <article><span>Study streak</span><strong class="teal-text">5 days</strong><small>Keep going!</small></article>
+    </div>
+
+    <div class="dashboard-grid">
+        <article class="panel performance-panel">
+            <h2>Subject Performance</h2>
+            <div class="progress-row">
+                <span>Mathematics</span>
+                <div class="progress-track"><span style="width: 78%"></span></div>
+                <strong>78%</strong>
+            </div>
+            <div class="progress-row">
+                <span>English</span>
+                <div class="progress-track teal"><span style="width: 70%"></span></div>
+                <strong>70%</strong>
+            </div>
+            <div class="progress-row">
+                <span>Biology</span>
+                <div class="progress-track orange"><span style="width: 84%"></span></div>
+                <strong>84%</strong>
+            </div>
+        </article>
+
+        <article class="panel">
+            <h2>Recent Results</h2>
+            {% for result in recent_results %}
+                <div class="list-row">
+                    <span><strong>{{ result.test }}</strong><small>{{ result.date }}</small></span>
+                    <strong class="score-pill">{{ result.score }}</strong>
+                </div>
+            {% endfor %}
+            <a class="button button-small button-secondary" href="{{ url_for('student_results') }}">View Results</a>
+        </article>
+    </div>
+{% endcall %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="auth-layout">
+    <div class="auth-copy">
+        <p class="eyebrow">Welcome back</p>
+        <h1>Login</h1>
+        <p>Use the demo login to continue to the connected student or admin dashboards.</p>
+        <div class="auth-metrics">
+            <article><strong>120+</strong><span>Mock tests</span></article>
+            <article><strong>850+</strong><span>Past papers</span></article>
+        </div>
+    </div>
+    <form method="post" class="form-card">
+        {% if registered %}
+            <div class="notice">Registration successful. Login to continue.</div>
+        {% endif %}
+        {% if next_path %}
+            <input type="hidden" name="next" value="{{ next_path }}">
+        {% endif %}
+        <label>Email <input type="email" name="email" value="{{ pending_email }}" required></label>
+        <label>Password <input type="password" name="password" required></label>
+        <label>Role
+            <select name="role">
+                <option value="Student" {% if pending_role == "student" %}selected{% endif %}>Student</option>
+                <option value="Administrator" {% if pending_role == "admin" %}selected{% endif %}>Administrator</option>
+            </select>
+        </label>
+        <button class="button" type="submit">Login</button>
+        <p>Need an account? <a href="{{ url_for('register', next=next_path) if next_path else url_for('register') }}">Register here</a>.</p>
+    </form>
+</section>
+{% endblock %}

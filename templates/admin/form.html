@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "macros.html" import admin_shell with context %}
+
+{% block content %}
+{% call admin_shell(title) %}
+    <form method="post" class="form-card inline-form">
+        {% if submitted %}
+            <div class="notice">{{ title }} submitted successfully in demo mode.</div>
+        {% endif %}
+        {% for field in fields %}
+            <label>{{ field.label }}
+                {% if field.type == "select" %}
+                    <select name="{{ field.name }}">
+                        {% for option in field.options %}
+                            <option{% if field.value == option %} selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                {% elif field.type == "textarea" %}
+                    <textarea name="{{ field.name }}" rows="4">{{ field.value or '' }}</textarea>
+                {% else %}
+                    <input type="{{ field.type }}" name="{{ field.name }}" value="{{ field.value or '' }}">
+                {% endif %}
+            </label>
+        {% endfor %}
+        <div class="quick-actions">
+            <button class="button" type="submit">Save</button>
+            <a class="button button-secondary" href="{{ url_for(return_endpoint) }}">Back</a>
+        </div>
+    </form>
+{% endcall %}
+{% endblock %}

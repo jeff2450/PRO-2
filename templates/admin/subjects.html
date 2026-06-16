@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "macros.html" import admin_shell with context %}
+
+{% block content %}
+{% call admin_shell(title) %}
+    <div class="toolbar">
+        <a class="button button-small" href="{{ url_for('admin_subject_form') }}">Add Subject</a>
+        <a class="button button-small button-secondary" href="{{ url_for('subjects') }}">View Public Subjects</a>
+    </div>
+    <div class="card-grid">
+        {% for subject in subjects %}
+            <article class="panel">
+                <h2>{{ subject.name }}</h2>
+                <p>{{ subject.description }}</p>
+                <div class="card-actions">
+                    <a href="{{ url_for('admin_subject_edit', subject_id=subject.id) }}">Edit</a>
+                    <a href="{{ url_for('admin_materials') }}">Materials</a>
+                    <a href="{{ url_for('admin_tests') }}">Tests</a>
+                    <form method="post" action="{{ url_for('admin_delete_subject', subject_id=subject.id) }}">
+                        <button class="link-button danger-link" type="submit">Delete</button>
+                    </form>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% endcall %}
+{% endblock %}

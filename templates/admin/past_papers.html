@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "macros.html" import admin_shell with context %}
+
+{% block content %}
+{% call admin_shell(title) %}
+    <div class="toolbar">
+        <a class="button button-small" href="{{ url_for('admin_paper_form') }}">Upload Paper</a>
+        <a class="button button-small button-secondary" href="{{ url_for('student_past_papers') }}">Student View</a>
+    </div>
+    <div class="table-card">
+        <table>
+            <thead><tr><th>Subject</th><th>Year</th><th>Paper</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for paper in papers %}
+                    <tr>
+                        <td>{{ paper.subject }}</td>
+                        <td>{{ paper.year }}</td>
+                        <td>{{ paper.paper }}</td>
+                        <td>
+                            <div class="row-actions">
+                                <a href="{{ url_for('admin_paper_form') }}">Edit</a>
+                                <form method="post" action="{{ url_for('admin_delete_paper', paper_id=loop.index) }}">
+                                    <button class="link-button danger-link" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endcall %}
+{% endblock %}

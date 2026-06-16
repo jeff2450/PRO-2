@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "macros.html" import student_shell with context %}
+
+{% block content %}
+{% call student_shell(title) %}
+    <form method="post" class="form-card inline-form">
+        {% if submitted %}
+            <div class="notice">Profile saved successfully in demo mode.</div>
+        {% endif %}
+        <label>Full name <input value="Student User"></label>
+        <label>Email <input type="email" value="student@example.com"></label>
+        <label>Exam focus
+            <select>
+                <option>NECTA</option>
+                <option>KCSE</option>
+            </select>
+        </label>
+        <button class="button" type="submit">Save Profile</button>
+    </form>
+{% endcall %}
+{% endblock %}

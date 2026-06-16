@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_hero %}
+
+{% block content %}
+<section class="home-hero">
+    <div class="home-copy">
+        <p class="eyebrow">NECTA and KCSE preparation</p>
+        <h1>ExamPrep Pro</h1>
+        <p>Practice with timed mock tests, revise with organized materials, and review past papers from one connected learning dashboard.</p>
+        <div class="hero-actions">
+            <a class="button" href="{{ url_for('register') }}">Create Account</a>
+            <a class="button button-secondary" href="{{ url_for('register', next=url_for('student_mock_tests')) }}">Try Mock Tests</a>
+        </div>
+    </div>
+    <div class="hero-panel hero-metrics" aria-label="Exam readiness summary">
+        <article>
+            <strong>24%</strong>
+            <span>Average improvement</span>
+        </article>
+        <article>
+            <strong>Maths</strong>
+            <span>Next mock</span>
+        </article>
+        <article>
+            <strong>18 days</strong>
+            <span>Study streak</span>
+        </article>
+    </div>
+</section>
+
+<section class="stats-grid" aria-label="Platform statistics">
+    {% for label, value in stats.items() %}
+        <article>
+            <strong>{{ value }}</strong>
+            <span>{{ label.replace("_", " ").title() }}</span>
+        </article>
+    {% endfor %}
+</section>
+
+<section class="content-band">
+    <div class="section-heading">
+        <p class="eyebrow">Core tools</p>
+        <h2>Everything is linked into the right workspace</h2>
+    </div>
+    <div class="feature-grid">
+        <article>
+            <h3>Study Materials</h3>
+            <p>Open revision notes, guides, and model answers by subject.</p>
+            <a class="text-link" href="{{ url_for('register', next=url_for('student_materials')) }}">Open materials</a>
+        </article>
+        <article>
+            <h3>Past Papers</h3>
+            <p>Search papers by subject and year, then view or download them.</p>
+            <a class="text-link" href="{{ url_for('register', next=url_for('student_past_papers')) }}">Browse papers</a>
+        </article>
+        <article>
+            <h3>Mock Tests</h3>
+            <p>Start timed tests and get automatic grading after submission.</p>
+            <a class="text-link" href="{{ url_for('register', next=url_for('student_mock_tests')) }}">Start practice</a>
+        </article>
+    </div>
+</section>
+
+<section class="content-band muted">
+    <div class="section-heading">
+        <p class="eyebrow">Available subjects</p>
+        <h2>Current study areas</h2>
+    </div>
+    <div class="subject-grid">
+        {% for subject in subjects %}
+            <article>
+                <h3>{{ subject.name }}</h3>
+                <p>{{ subject.description }}</p>
+                <span>{{ subject.materials }} materials · {{ subject.tests }} tests</span>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

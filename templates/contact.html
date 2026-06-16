@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_hero %}
+
+{% block content %}
+{{ page_hero("Contact Us", "Send a message to the ExamPrep Pro team or ask for help with your account.", [("Create Account", "register", ""), ("Login", "login", "button-secondary")]) }}
+
+<section class="form-section">
+    <form method="post" class="form-card">
+        {% if submitted %}
+            <div class="notice">Message received. This demo keeps the flow on the same page.</div>
+        {% endif %}
+        <label>Full name <input name="name" required></label>
+        <label>Email <input type="email" name="email" required></label>
+        <label>Message <textarea name="message" rows="5" required></textarea></label>
+        <button class="button" type="submit">Send Message</button>
+    </form>
+</section>
+{% endblock %}

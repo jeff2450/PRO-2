@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_hero %}
+
+{% block content %}
+{{ page_hero("Subjects", "Choose a subject area and continue into revision materials, past papers, or timed mock tests after creating an account.", [("Study Materials", "register", "", "student_materials"), ("Mock Tests", "register", "button-secondary", "student_mock_tests")]) }}
+
+<section class="content-band">
+    <div class="subject-grid">
+        {% for subject in subjects %}
+            <article>
+                <h2>{{ subject.name }}</h2>
+                <p>{{ subject.description }}</p>
+                <div class="meta-row">
+                    <span>{{ subject.level }}</span>
+                    <span>{{ subject.materials }} materials</span>
+                    <span>{{ subject.tests }} tests</span>
+                </div>
+                <div class="card-actions">
+                    <a class="button button-small" href="{{ url_for('register', next=url_for('student_materials')) }}">Materials</a>
+                    <a class="button button-small button-secondary" href="{{ url_for('register', next=url_for('student_mock_tests')) }}">Tests</a>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "macros.html" import admin_shell with context %}
+
+{% block content %}
+{% call admin_shell(title) %}
+    <div class="toolbar">
+        <input aria-label="Search users" placeholder="Search students">
+        <a class="button button-small" href="{{ url_for('admin_user_form') }}">Add User</a>
+    </div>
+    <div class="table-card">
+        <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.fullname }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role }}</td>
+                        <td>
+                            <div class="row-actions">
+                                <a href="{{ url_for('admin_user_form') }}">Edit</a>
+                                <form method="post" action="{{ url_for('admin_delete_user', user_id=loop.index) }}">
+                                    <button class="link-button danger-link" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endcall %}
+{% endblock %}

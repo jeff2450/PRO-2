@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "macros.html" import student_shell with context %}
+
+{% block content %}
+{% call student_shell(title) %}
+    <article class="panel test-panel">
+        <div class="test-header">
+            <div>
+                <p class="eyebrow">{{ test.subject }}</p>
+                <h2>{{ test.title }}</h2>
+            </div>
+            <div class="test-meta">
+                <strong>{{ test.duration }} min</strong>
+                <div class="test-timer" data-test-timer>
+                    <span>Time spent</span>
+                    <strong data-timer-display>00:00</strong>
+                </div>
+            </div>
+        </div>
+        <form method="post" action="{{ url_for('student_submit_test', test_id=test_id) }}" data-test-form>
+            <input type="hidden" name="elapsed_seconds" value="0" data-elapsed-seconds>
+            {% set questions = test.questions|default([]) %}
+            {% if questions %}
+                {% for question in questions %}
+                    <fieldset>
+                        <legend>{{ loop.index }}. {{ question.text }}</legend>
+                        {% for option in question.options %}
+                            <label><input type="radio" name="q{{ loop.index }}"> {{ option }}</label>
+                        {% endfor %}
+                    </fieldset>
+                {% endfor %}
+            {% else %}
+                <fieldset>
+                    <legend>1. Which answer best fits this sample question?</legend>
+                    <label><input type="radio" name="q1"> Option A</label>
+                    <label><input type="radio" name="q1"> Option B</label>
+                    <label><input type="radio" name="q1"> Option C</label>
+                    <label><input type="radio" name="q1"> Option D</label>
+                </fieldset>
+            {% endif %}
+            <div class="quick-actions">
+                <a class="button button-secondary" href="{{ url_for('student_mock_tests') }}">Back to Tests</a>
+                <button class="button" type="submit">Submit Test</button>
+            </div>
+        </form>
+    </article>
+{% endcall %}
+{% endblock %}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }} | ExamPrep Pro</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+</head>
+<body class="{% if request.endpoint and (request.endpoint.startswith('student_') or request.endpoint.startswith('admin_')) %}app-page{% endif %}" data-endpoint="{{ request.endpoint }}">
+    {% if not (request.endpoint and (request.endpoint.startswith('student_') or request.endpoint.startswith('admin_'))) %}
+        <header class="site-header">
+            <a class="brand" href="{{ url_for('home') }}" aria-label="ExamPrep Pro home">
+                <span class="brand-mark">EP</span>
+                <span>ExamPrep Pro</span>
+            </a>
+            <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button>
+            <nav class="primary-nav" id="primary-nav" aria-label="Primary navigation">
+                {% for label, endpoint in public_nav %}
+                    <a href="{{ url_for(endpoint) }}" data-endpoint="{{ endpoint }}">{{ label }}</a>
+                {% endfor %}
+                {% if current_user_role %}
+                    <a class="nav-login" href="{{ url_for(current_dashboard_endpoint) }}">Dashboard</a>
+                    <a class="button button-small" href="{{ url_for('logout') }}">Logout</a>
+                {% else %}
+                    <a class="nav-login" href="{{ url_for('login') }}" data-endpoint="login">Login</a>
+                    <a class="button button-small" href="{{ url_for('register') }}" data-endpoint="register">Register</a>
+                {% endif %}
+            </nav>
+        </header>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if not (request.endpoint and (request.endpoint.startswith('student_') or request.endpoint.startswith('admin_'))) %}
+        <footer class="site-footer">
+            <div>
+                <strong>ExamPrep Pro</strong>
+                <p>Digital revision, past papers, and mock examinations for serious exam preparation.</p>
+            </div>
+            <div class="footer-links">
+                <a href="{{ url_for('contact') }}">Contact</a>
+            </div>
+        </footer>
+    {% endif %}
+</body>
+</html>

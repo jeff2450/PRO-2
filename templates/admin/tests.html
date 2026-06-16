@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "macros.html" import admin_shell with context %}
+
+{% block content %}
+{% call admin_shell(title) %}
+    <div class="toolbar">
+        <a class="button button-small" href="{{ url_for('admin_test_form') }}">Create Test</a>
+        <a class="button button-small button-secondary" href="{{ url_for('admin_questions') }}">Manage Questions</a>
+    </div>
+    <div class="card-grid">
+        {% for test in tests %}
+            <article class="panel">
+                <h2>{{ test.title }}</h2>
+                <p>{{ test.subject }} - {{ test.duration }} minutes - {{ test.marks }} marks</p>
+                <div class="card-actions">
+                    <a href="{{ url_for('admin_test_form') }}">Edit</a>
+                    <a href="{{ url_for('student_take_test', test_id=loop.index) }}">Preview</a>
+                    <form method="post" action="{{ url_for('admin_delete_test', test_id=loop.index) }}">
+                        <button class="link-button danger-link" type="submit">Delete</button>
+                    </form>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+{% endcall %}
+{% endblock %}

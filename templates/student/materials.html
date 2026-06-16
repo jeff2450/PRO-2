@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "macros.html" import student_shell with context %}
+
+{% block content %}
+{% call student_shell(title) %}
+    <div class="toolbar">
+        <input aria-label="Search materials" placeholder="Search materials">
+        <a class="button button-small button-secondary" href="{{ url_for('subjects') }}">Browse Subjects</a>
+    </div>
+    <div class="table-card">
+        <table>
+            <thead><tr><th>Title</th><th>Subject</th><th>Type</th><th>Action</th></tr></thead>
+            <tbody>
+                {% for material in materials %}
+                    <tr>
+                        <td>{{ material.title }}</td>
+                        <td>{{ material.subject }}</td>
+                        <td>{{ material.type }}</td>
+                        <td><a href="{{ url_for('student_materials') }}">View online</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endcall %}
+{% endblock %}

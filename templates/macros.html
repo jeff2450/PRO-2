@@ -1,0 +1,84 @@
+{% macro page_hero(title, lead, actions=[]) %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">ExamPrep Pro</p>
+        <h1>{{ title }}</h1>
+        <p>{{ lead }}</p>
+        {% if actions %}
+            <div class="hero-actions">
+                {% for action in actions %}
+                    {% set label = action[0] %}
+                    {% set endpoint = action[1] %}
+                    {% set style = action[2] %}
+                    {% set next_endpoint = action[3] if action|length > 3 else none %}
+                    <a class="button {{ style }}" href="{{ url_for(endpoint, next=url_for(next_endpoint)) if next_endpoint else url_for(endpoint) }}">{{ label }}</a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endmacro %}
+
+{% macro student_shell(title) %}
+<section class="app-shell app-shell-student">
+    <header class="app-topbar">
+        <a class="app-brand" href="{{ url_for('student_dashboard') }}" aria-label="ExamPrep Pro student dashboard">
+            <span class="app-brand-mark">EP</span>
+            <span>ExamPrep Pro</span>
+        </a>
+        <div class="app-userbar" aria-label="User menu">
+            <button class="icon-button" type="button" aria-label="Notifications">!</button>
+            <span class="avatar" aria-hidden="true">JJ</span>
+            <span class="user-name">Japhet</span>
+            <a class="icon-button" href="{{ url_for('logout') }}" aria-label="Log out">></a>
+        </div>
+    </header>
+    <aside class="side-nav" aria-label="Student navigation">
+        <p class="side-kicker">Student</p>
+        {% for label, endpoint in student_nav %}
+            <a href="{{ url_for(endpoint) }}" data-endpoint="{{ endpoint }}"><span class="nav-token" aria-hidden="true">{{ label[0] }}</span>{{ label }}</a>
+        {% endfor %}
+    </aside>
+    <section class="app-content">
+        {% if title != "Student Dashboard" %}
+            <div class="section-heading app-section-heading">
+                <p class="eyebrow">Student workspace</p>
+                <h1>{{ title }}</h1>
+            </div>
+        {% endif %}
+        {{ caller() }}
+    </section>
+</section>
+{% endmacro %}
+
+{% macro admin_shell(title) %}
+<section class="app-shell app-shell-admin">
+    <header class="app-topbar">
+        <a class="app-brand" href="{{ url_for('admin_dashboard') }}" aria-label="ExamPrep Pro admin dashboard">
+            <span class="app-brand-mark">EP</span>
+            <span>ExamPrep Pro</span>
+        </a>
+        <div class="app-userbar" aria-label="User menu">
+            <button class="icon-button" type="button" aria-label="Notifications">!</button>
+            <span class="avatar" aria-hidden="true">AD</span>
+            <span class="user-name">Admin</span>
+            <a class="icon-button" href="{{ url_for('logout') }}" aria-label="Log out">></a>
+        </div>
+    </header>
+    <aside class="side-nav admin-side" aria-label="Admin navigation">
+        <p class="side-kicker">Admin</p>
+        {% for label, endpoint in admin_nav %}
+            <a href="{{ url_for(endpoint) }}" data-endpoint="{{ endpoint }}"><span class="nav-token" aria-hidden="true">{{ label[0] }}</span>{{ label }}</a>
+        {% endfor %}
+    </aside>
+    <section class="app-content">
+        {% if title != "Admin Dashboard" %}
+            <div class="section-heading app-section-heading">
+                <p class="eyebrow">Administration</p>
+                <h1>{{ title }}</h1>
+            </div>
+        {% endif %}
+        {{ caller() }}
+    </section>
+</section>
+{% endmacro %}

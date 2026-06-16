@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "macros.html" import student_shell with context %}
+
+{% block content %}
+{% call student_shell(title) %}
+    <div class="toolbar">
+        <select aria-label="Filter by subject">
+            <option>All subjects</option>
+            <option>Mathematics</option>
+            <option>Biology</option>
+            <option>English</option>
+            <option>Chemistry</option>
+        </select>
+        <select aria-label="Filter by year">
+            <option>All years</option>
+            <option>2025</option>
+            <option>2024</option>
+            <option>2023</option>
+        </select>
+    </div>
+    <div class="table-card">
+        <table>
+            <thead><tr><th>Subject</th><th>Year</th><th>Paper</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for paper in papers %}
+                    <tr>
+                        <td>{{ paper.subject }}</td>
+                        <td>{{ paper.year }}</td>
+                        <td>{{ paper.paper }}</td>
+                        <td>
+                            <a href="{{ url_for('student_past_papers') }}">View</a>
+                            <a href="{{ url_for('student_past_papers') }}">Download</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endcall %}
+{% endblock %}
