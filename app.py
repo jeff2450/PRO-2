@@ -1,11 +1,16 @@
-from functools import wraps
+import os
+import secrets
 from datetime import date
+from functools import wraps
 
 from flask import Flask, redirect, render_template, request, session, url_for
+from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "dev-secret-key"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
 SUBJECTS = [
@@ -161,6 +166,13 @@ def delete_by_index(items, item_id):
         items.pop(index)
 
 
+def delete_by_id(items, item_id):
+    for index, item in enumerate(items):
+        if item.get("id") == item_id:
+            items.pop(index)
+            break
+
+
 def form_int(name, default=0):
     try:
         return int(request.form.get(name, default))
@@ -175,6 +187,15 @@ def format_elapsed_time(total_seconds):
     if hours:
         return f"{hours:d}:{minutes:02d}:{seconds:02d}"
     return f"{minutes:02d}:{seconds:02d}"
+
+
+def save_uploaded_file(field_name):
+    uploaded_file = request.files.get(field_name)
+    if not uploaded_file or not uploaded_file.filename:
+        return ""
+    filename = f"{secrets.token_hex(6)}-{secure_filename(uploaded_file.filename)}"
+    uploaded_file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+    return url_for("static", filename=f"uploads/{filename}")
 
 
 def login_required(role=None):
@@ -196,11 +217,15 @@ def login_required(role=None):
 
 @app.context_processor
 def inject_navigation():
+    current_user_name = session.get("user_name", "Student User")
+    current_user_initials = "".join(part[:1] for part in current_user_name.split()[:2]).upper() or "SU"
     return {
         "public_nav": PUBLIC_NAV,
         "student_nav": STUDENT_NAV,
         "admin_nav": ADMIN_NAV,
         "current_user_role": session.get("user_role"),
+        "current_user_name": current_user_name,
+        "current_user_initials": current_user_initials,
         "current_dashboard_endpoint": dashboard_for_role(session.get("user_role", "student")),
     }
 
@@ -240,9 +265,14 @@ def login():
     if request.method == "POST":
         role = request.form.get("role") or session.get("pending_login_role") or "student"
         user_role = normalize_role(role)
+        email = request.form.get("email") or session.get("pending_login_email", "")
+        user = next((user for user in USERS if user["email"] == email), None)
         session["user_role"] = user_role
+        session["user_name"] = session.get("pending_login_name") or (user["fullname"] if user else "Student User")
+        session["user_email"] = email
         session.pop("pending_login_role", None)
         session.pop("pending_login_email", None)
+        session.pop("pending_login_name", None)
         return redirect_after_auth(user_role)
 
     registered = request.args.get("registered") == "1"
@@ -263,8 +293,13 @@ def register():
         session["auth_next"] = next_path
 
     if request.method == "POST":
-        session["pending_login_role"] = normalize_role(request.form.get("role"))
-        session["pending_login_email"] = request.form.get("email", "")
+        fullname = request.form.get("fullname", "Student User").strip() or "Student User"
+        email = request.form.get("email", "")
+        role = request.form.get("role", "Student")
+        USERS.append({"fullname": fullname, "email": email, "role": role})
+        session["pending_login_role"] = normalize_role(role)
+        session["pending_login_email"] = email
+        session["pending_login_name"] = fullname
         return redirect(url_for("login", registered=1))
 
     return render_template("register.html", title="Register", next_path=session.get("auth_next", ""))
@@ -407,7 +442,7 @@ def admin_subjects():
 @app.route("/admin/subjects/<int:subject_id>/delete", methods=["POST"])
 @login_required("admin")
 def admin_delete_subject(subject_id):
-    delete_by_index(SUBJECTS, subject_id)
+    delete_by_id(SUBJECTS, subject_id)
     return redirect(url_for("admin_subjects"))
 
 
@@ -482,6 +517,8 @@ def admin_material_form():
                 "title": request.form.get("title", "New Material"),
                 "subject": request.form.get("subject", ""),
                 "type": request.form.get("type", "PDF Notes"),
+                "file_url": save_uploaded_file("upload_file"),
+                "source_url": request.form.get("source_url", "").strip(),
             }
         )
         return redirect(url_for("admin_materials"))
@@ -490,11 +527,14 @@ def admin_material_form():
         "admin/form.html",
         title="Upload Material",
         submitted=False,
+        has_upload=True,
         return_endpoint="admin_materials",
         fields=[
             {"label": "Title", "name": "title", "type": "text"},
             {"label": "Subject", "name": "subject", "type": "select", "options": [subject["name"] for subject in SUBJECTS]},
             {"label": "Material type", "name": "type", "type": "select", "options": ["PDF Notes", "Revision Guide", "Model Answers"]},
+            {"label": "Upload file", "name": "upload_file", "type": "file", "accept": ".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"},
+            {"label": "External URL", "name": "source_url", "type": "url"},
         ],
     )
 
@@ -521,6 +561,8 @@ def admin_paper_form():
                 "subject": request.form.get("subject", ""),
                 "year": form_int("year", date.today().year),
                 "paper": request.form.get("paper", "Paper"),
+                "file_url": save_uploaded_file("upload_file"),
+                "source_url": request.form.get("source_url", "").strip(),
             }
         )
         return redirect(url_for("admin_past_papers"))
@@ -529,11 +571,14 @@ def admin_paper_form():
         "admin/form.html",
         title="Upload Past Paper",
         submitted=False,
+        has_upload=True,
         return_endpoint="admin_past_papers",
         fields=[
             {"label": "Subject", "name": "subject", "type": "select", "options": [subject["name"] for subject in SUBJECTS]},
             {"label": "Year", "name": "year", "type": "number"},
             {"label": "Paper", "name": "paper", "type": "text"},
+            {"label": "Upload file", "name": "upload_file", "type": "file", "accept": ".pdf,.doc,.docx,.jpg,.jpeg,.png"},
+            {"label": "External URL", "name": "source_url", "type": "url"},
         ],
     )
 
@@ -636,7 +681,7 @@ def route_health():
         {
             "endpoint": rule.endpoint,
             "path": rule.rule,
-            "url": url_for(rule.endpoint, **({"test_id": 1} if "test_id" in rule.arguments else {})),
+            "url": url_for(rule.endpoint, **{argument: 1 for argument in rule.arguments}),
         }
         for rule in app.url_map.iter_rules()
         if rule.endpoint != "static"

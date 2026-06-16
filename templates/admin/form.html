@@ -3,7 +3,7 @@
 
 {% block content %}
 {% call admin_shell(title) %}
-    <form method="post" class="form-card inline-form">
+    <form method="post" class="form-card inline-form" {% if has_upload %}enctype="multipart/form-data"{% endif %}>
         {% if submitted %}
             <div class="notice">{{ title }} submitted successfully in demo mode.</div>
         {% endif %}
@@ -17,6 +17,8 @@
                     </select>
                 {% elif field.type == "textarea" %}
                     <textarea name="{{ field.name }}" rows="4">{{ field.value or '' }}</textarea>
+                {% elif field.type == "file" %}
+                    <input type="file" name="{{ field.name }}" {% if field.accept %}accept="{{ field.accept }}"{% endif %}>
                 {% else %}
                     <input type="{{ field.type }}" name="{{ field.name }}" value="{{ field.value or '' }}">
                 {% endif %}

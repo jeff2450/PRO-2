@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import admin_shell with context %}
+{% from "macros.html" import admin_shell, delete_icon_button with context %}
 
 {% block content %}
 {% call admin_shell(title) %}
@@ -9,7 +9,7 @@
     </div>
     <div class="table-card">
         <table>
-            <thead><tr><th>Subject</th><th>Year</th><th>Paper</th><th>Action</th></tr></thead>
+            <thead><tr><th>Subject</th><th>Year</th><th>Paper</th><th>Source</th><th>Action</th></tr></thead>
             <tbody>
                 {% for paper in papers %}
                     <tr>
@@ -17,10 +17,18 @@
                         <td>{{ paper.year }}</td>
                         <td>{{ paper.paper }}</td>
                         <td>
+                            {% set source = paper.source_url or paper.file_url %}
+                            {% if source %}
+                                <a href="{{ source }}" target="_blank" rel="noopener">Open</a>
+                            {% else %}
+                                <span class="muted-text">None</span>
+                            {% endif %}
+                        </td>
+                        <td>
                             <div class="row-actions">
                                 <a href="{{ url_for('admin_paper_form') }}">Edit</a>
                                 <form method="post" action="{{ url_for('admin_delete_paper', paper_id=loop.index) }}">
-                                    <button class="link-button danger-link" type="submit">Delete</button>
+                                    {{ delete_icon_button("Delete paper") }}
                                 </form>
                             </div>
                         </td>

@@ -17,7 +17,7 @@ if (menuButton && primaryNav) {
     });
 }
 
-/* ── Timer / Stopwatch for Test Taking ── */
+/* Timer / Stopwatch for Test Taking */
 document.querySelectorAll("[data-test-form]").forEach((form) => {
     const timerDisplay = form.querySelector("[data-timer-display]");
     const elapsedInput = form.querySelector("[data-elapsed-seconds]");

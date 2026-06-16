@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import admin_shell with context %}
+{% from "macros.html" import admin_shell, delete_icon_button with context %}
 
 {% block content %}
 {% call admin_shell(title) %}
@@ -17,7 +17,7 @@
                     <a href="{{ url_for('admin_materials') }}">Materials</a>
                     <a href="{{ url_for('admin_tests') }}">Tests</a>
                     <form method="post" action="{{ url_for('admin_delete_subject', subject_id=subject.id) }}">
-                        <button class="link-button danger-link" type="submit">Delete</button>
+                        {{ delete_icon_button("Delete subject") }}
                     </form>
                 </div>
             </article>
