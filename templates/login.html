@@ -15,19 +15,17 @@
         {% if registered %}
             <div class="notice">Registration successful. Welcome, {{ pending_name }}! Login to continue.</div>
         {% endif %}
+        {% if error %}
+            <div class="notice" style="border-left-color: #d92d20; color: #d92d20; background: #fee2e2;">{{ error }}</div>
+        {% endif %}
         {% if next_path %}
             <input type="hidden" name="next" value="{{ next_path }}">
         {% endif %}
-        <label>Email <input type="email" name="email" value="{{ pending_email }}" required></label>
+        <label>Email <input type="email" name="email" required></label>
         <label>Password <input type="password" name="password" required></label>
-        <label>Role
-            <select name="role">
-                <option value="Student" {% if pending_role == "student" %}selected{% endif %}>Student</option>
-                <option value="Administrator" {% if pending_role == "admin" %}selected{% endif %}>Administrator</option>
-            </select>
-        </label>
         <button class="button" type="submit">Login</button>
         <p>Need an account? <a href="{{ url_for('register', next=next_path) if next_path else url_for('register') }}">Register here</a>.</p>
+        <p style="font-size: 0.9rem; color: #667085; margin-top: 16px;"><strong>Demo login:</strong> Admin: admin@gmail.com / admin123</p>
     </form>
 </section>
 {% endblock %}

@@ -25,9 +25,11 @@
                             <input type="text" name="remark" value="{{ result.remark or '' }}" aria-label="Remark for {{ result.test }}">
                             <button class="button button-small" type="submit">Save</button>
                         </form>
-                        <form method="post" action="{{ url_for('admin_delete_report_remark', result_id=result.id) }}">
-                            {{ delete_icon_button("Delete remark") }}
-                        </form>
+                        {% if result.remark %}
+                            <form method="post" action="{{ url_for('admin_delete_report_remark', result_id=result.id) }}" style="margin-left: 8px;">
+                                {{ delete_icon_button("Delete remark") }}
+                            </form>
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}

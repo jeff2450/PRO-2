@@ -558,7 +558,7 @@ th {
     height: 36px;
     place-items: center;
     border: 0;
-    border-radius: 8px;
+    border-radius: 12px;
     color: #52687a;
     background: transparent;
     cursor: pointer;
@@ -1990,6 +1990,116 @@ body.app-page {
     }
     50% {
         box-shadow: 0 0 0 8px rgba(180, 35, 24, 0);
+    }
+}
+
+/* Prominent Timer Header */
+.test-timer-header {
+    background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    color: #ffffff;
+    padding: 24px 32px;
+    border-radius: 0;
+    margin: -22px -16px 24px -16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.timer-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.test-header-title {
+    flex: 1;
+}
+
+.test-header-title .eyebrow {
+    margin: 0 0 4px 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.test-header-title h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.timer-display-large {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    text-align: right;
+    border-left: 2px solid rgba(255, 255, 255, 0.3);
+    padding-left: 24px;
+    min-width: 200px;
+}
+
+.timer-display-large span {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.timer-display-large strong {
+    font-size: 2.5rem;
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.05em;
+    font-weight: bold;
+}
+
+.test-timer-header.timer-warning {
+    background: linear-gradient(135deg, #ea580c 0%, #ed7d15 100%);
+    box-shadow: 0 0 0 0 rgba(237, 125, 15, 0.6);
+    animation: pulse-warning 1s ease-in-out infinite;
+}
+
+.test-timer-header.timer-critical {
+    background: linear-gradient(135deg, #991b1b 0%, #b42318 100%);
+    box-shadow: 0 0 0 0 rgba(180, 35, 24, 0.8);
+    animation: pulse-critical 0.5s ease-in-out infinite;
+}
+
+@media (max-width: 768px) {
+    .test-timer-header {
+        margin: -22px -16px 20px -16px;
+        padding: 18px 16px;
+    }
+
+    .timer-header-content {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .test-header-title h1 {
+        font-size: 1.5rem;
+    }
+
+    .timer-display-large {
+        align-items: flex-start;
+        text-align: left;
+        border-left: none;
+        border-top: 2px solid rgba(255, 255, 255, 0.3);
+        padding-left: 0;
+        padding-top: 12px;
+        min-width: auto;
+        width: 100%;
+    }
+
+    .timer-display-large strong {
+        font-size: 2rem;
     }
 }
 

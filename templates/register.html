@@ -18,12 +18,6 @@
         <label>Full name <input name="fullname" required></label>
         <label>Email <input type="email" name="email" required></label>
         <label>Password <input type="password" name="password" required></label>
-        <label>Role
-            <select name="role">
-                <option>Student</option>
-                <option>Administrator</option>
-            </select>
-        </label>
         <button class="button" type="submit">Create Account</button>
         <a class="text-link" href="{{ url_for('login', next=next_path) if next_path else url_for('login') }}">Already have an account? Login</a>
     </form>

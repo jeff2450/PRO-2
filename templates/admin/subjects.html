@@ -13,10 +13,10 @@
                 <h2>{{ subject.name }}</h2>
                 <p>{{ subject.description }}</p>
                 <div class="card-actions">
-                    <a href="{{ url_for('admin_subject_edit', subject_id=subject.id) }}">Edit</a>
-                    <a href="{{ url_for('admin_materials') }}">Materials</a>
-                    <a href="{{ url_for('admin_tests') }}">Tests</a>
-                    <form method="post" action="{{ url_for('admin_delete_subject', subject_id=subject.id) }}">
+                    <a href="{{ url_for('admin_subject_edit', subject_id=subject.id) }}" class="button button-small">Edit</a>
+                    <a href="{{ url_for('admin_materials') }}" class="button button-small">Materials</a>
+                    <a href="{{ url_for('admin_tests') }}"class="button button-small">Tests</a>
+                    <form method="post" action="{{ url_for('admin_delete_subject', subject_id=subject.id) }}"  class="button button-small button-secondary">
                         {{ delete_icon_button("Delete subject") }}
                     </form>
                 </div>

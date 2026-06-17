@@ -60,14 +60,13 @@ STUDENT_STATS = {
 }
 
 RECENT_RESULTS = [
-    {"test": "Mathematics Mock 3", "score": "82%", "date": "2026-06-15", "remark": "Strong algebra work; revise word problems."},
-    {"test": "Biology Paper 2 Drill", "score": "76%", "date": "2026-06-12", "remark": "Good progress; diagrams need more labels."},
-    {"test": "English Grammar Sprint", "score": "88%", "date": "2026-06-08", "remark": "Excellent grammar accuracy."},
+    {"test": "Mathematics Mock 3", "score": "82%", "date": "2026-06-15"},
+    {"test": "Biology Paper 2 Drill", "score": "76%", "date": "2026-06-12"},
+    {"test": "English Grammar Sprint", "score": "88%", "date": "2026-06-08"},
 ]
 
 USERS = [
-    {"id": 1, "fullname": "Student User", "email": "student@example.com", "role": "Student", "registered": "2026-06-10 14:30"},
-    {"id": 2, "fullname": "Admin User", "email": "admin@example.com", "role": "Administrator", "registered": "2026-06-09 09:15"},
+    {"id": 1, "fullname": "Admin User", "email": "admin@gmail.com", "role": "Administrator", "registered": "2026-06-09 09:15"},
 ]
 
 MATERIALS = [
@@ -1020,15 +1019,35 @@ def login():
         session["auth_next"] = next_path
 
     if request.method == "POST":
-        role = request.form.get("role") or session.get("pending_login_role") or "student"
-        user_role = normalize_role(role)
-        email = request.form.get("email") or session.get("pending_login_email", "")
-        user = next((user for user in USERS if user["email"] == email), None)
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+
+        # Check for hardcoded admin account
+        if email == "admin@gmail.com" and password == "admin123":
+            user_role = "admin"
+            user_name = "Admin User"
+        else:
+            # Check if student exists in registered users
+            user = next((user for user in USERS if user["email"] == email and user["role"] == "Student"), None)
+            if user:
+                user_role = "student"
+                user_name = user["fullname"]
+            else:
+                # User not found or not a student
+                pending_name = session.get("pending_login_name", "")
+                return render_template(
+                    "login.html",
+                    title="Login",
+                    registered=False,
+                    error="Invalid email or password",
+                    pending_email=email,
+                    pending_name=pending_name,
+                    next_path=next_path or "",
+                )
+
         session["user_role"] = user_role
-        session["user_name"] = session.get("pending_login_name") or (user["fullname"] if user else "Student User")
+        session["user_name"] = user_name
         session["user_email"] = email
-        session.pop("pending_login_role", None)
-        session.pop("pending_login_email", None)
         session.pop("pending_login_name", None)
         return redirect_after_auth(user_role)
 
@@ -1037,8 +1056,6 @@ def login():
         "login.html",
         title="Login",
         registered=registered,
-        pending_role=session.get("pending_login_role", "student"),
-        pending_email=session.get("pending_login_email", ""),
         pending_name=session.get("pending_login_name", ""),
         next_path=session.get("auth_next", ""),
     )
@@ -1052,12 +1069,18 @@ def register():
 
     if request.method == "POST":
         fullname = request.form.get("fullname", "Student User").strip() or "Student User"
-        email = request.form.get("email", "")
-        role = request.form.get("role", "Student")
+        email = request.form.get("email", "").strip()
+
         # Assign a new unique ID to the user
         next_id = max((u.get("id", 0) for u in USERS), default=0) + 1
-        USERS.append({"id": next_id, "fullname": fullname, "email": email, "role": role, "registered": datetime.now().strftime("%Y-%m-%d %H:%M")})
-        session["pending_login_role"] = normalize_role(role)
+        USERS.append({
+            "id": next_id,
+            "fullname": fullname,
+            "email": email,
+            "role": "Student",
+            "registered": datetime.now().strftime("%Y-%m-%d %H:%M")
+        })
+
         session["pending_login_email"] = email
         session["pending_login_name"] = fullname
         return redirect(url_for("login", registered=1))

@@ -17,9 +17,9 @@
                     <p class="test-file-info"><a href="{{ test.file_url }}" target="_blank" rel="noopener">&#128196; Download Test File</a></p>
                 {% endif %}
                 <div class="card-actions">
-                    <a href="{{ url_for('admin_test_form') }}">Edit</a>
-                    <a href="{{ url_for('admin_question_form', test_id=test.id) }}">Questions</a>
-                    <a href="{{ url_for('student_take_test', test_id=test.id) }}">Preview</a>
+                    <a href="{{ url_for('admin_test_form') }}" class="button button-small">Edit</a>
+                    <a href="{{ url_for('admin_question_form', test_id=test.id) }}" class="button button-small">Questions</a>
+                    <a href="{{ url_for('student_take_test', test_id=test.id) }}" class="button button-small button-secondary">Preview</a>
                     <form method="post" action="{{ url_for('admin_delete_test', test_id=test.id) }}">
                         {{ delete_icon_button("Delete test") }}
                     </form>

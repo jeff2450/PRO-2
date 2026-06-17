@@ -8,6 +8,7 @@ class ExamCountdownTimer {
         this.attemptId = options.attemptId;
         this.testId = options.testId;
         this.timerDisplay = document.querySelector('[data-timer-display]');
+        this.timerContainer = document.querySelector('[data-test-timer]');
         this.form = document.querySelector('[data-test-form]');
         this.warningThreshold = 300; // 5 minutes
         
@@ -22,6 +23,7 @@ class ExamCountdownTimer {
             attemptId: this.attemptId, 
             testId: this.testId,
             display: !!this.timerDisplay,
+            container: !!this.timerContainer,
             form: !!this.form
         });
         
@@ -124,14 +126,13 @@ class ExamCountdownTimer {
         this.timerDisplay.textContent = display;
         console.log('[TIMER] Display updated:', display);
         
-        // Update styling
-        const container = this.timerDisplay.closest('[data-test-timer]');
-        if (container) {
-            container.classList.remove('timer-warning', 'timer-critical');
+        // Update styling on the header container
+        if (this.timerContainer) {
+            this.timerContainer.classList.remove('timer-warning', 'timer-critical');
             if (this.remainingSeconds <= 60) {
-                container.classList.add('timer-critical');
+                this.timerContainer.classList.add('timer-critical');
             } else if (this.remainingSeconds <= 300) {
-                container.classList.add('timer-warning');
+                this.timerContainer.classList.add('timer-warning');
             }
         }
     }

@@ -3,19 +3,21 @@
 
 {% block content %}
 {% call student_shell(title) %}
-    <article class="panel test-panel" data-test-id="{{ test_id }}">
-        <div class="test-header">
-            <div>
+    <!-- Prominent Timer Header -->
+    <div class="test-timer-header" data-test-timer data-duration-seconds="{{ test.duration * 60 }}">
+        <div class="timer-header-content">
+            <div class="test-header-title">
                 <p class="eyebrow">{{ test.subject }}</p>
-                <h2>{{ test.title }}</h2>
+                <h1>{{ test.title }}</h1>
             </div>
-            <div class="test-meta">
-                <div class="test-timer" data-test-timer data-duration-seconds="{{ test.duration * 60 }}">
-                    <span>Time remaining</span>
-                    <strong data-timer-display>{{ test.duration }}m 00s</strong>
-                </div>
+            <div class="timer-display-large">
+                <span>Time left</span>
+                <strong data-timer-display>{{ test.duration }}m 00s</strong>
             </div>
         </div>
+    </div>
+
+    <article class="panel test-panel" data-test-id="{{ test_id }}">
         <form method="post" action="{{ url_for('student_submit_test', test_id=test_id) }}" data-test-form>
             <input type="hidden" name="elapsed_seconds" value="0" data-elapsed-seconds>
             <input type="hidden" name="attempt_id" value="">
