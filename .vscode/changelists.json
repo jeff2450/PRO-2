@@ -3,16 +3,27 @@
     {
       "name": "Default",
       "files": [
-        "static/css/styles.css",
-        "templates/admin/dashboard.html",
-        "templates/macros.html",
-        "templates/student/dashboard.html",
-        ".vscode/changelists.json",
         "app.py",
+        ".vscode/changelists.json",
         "__pycache__/app.cpython-314.pyc",
-        "templates/admin/users.html",
+        "static/css/styles.css",
+        "static/js/main.js",
+        "templates/admin/form.html",
+        "templates/admin/materials.html",
+        "templates/admin/past_papers.html",
+        "templates/admin/questions.html",
+        "templates/admin/reports.html",
         "templates/admin/tests.html",
-        "static/uploads/f870a3ecc6d7-bit_2a.pdf"
+        "templates/admin/users.html",
+        "templates/login.html",
+        "templates/student/materials.html",
+        "templates/student/mock_tests.html",
+        "templates/student/notifications.html",
+        "templates/student/past_papers.html",
+        "templates/student/profile.html",
+        "templates/student/take_test.html",
+        ".vscode/settings.json",
+        "instance/examprep.sqlite3"
       ]
     }
   ],

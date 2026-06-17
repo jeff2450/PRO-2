@@ -1,16 +1,20 @@
 import os
 import secrets
-from datetime import date, datetime
+import sqlite3
+import json
+from datetime import date, datetime, timedelta
 from functools import wraps
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, g, redirect, render_template, request, session, url_for, jsonify
 from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
+app.config["DATABASE"] = os.environ.get("DATABASE") or os.path.join(app.instance_path, "examprep.sqlite3")
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+os.makedirs(app.instance_path, exist_ok=True)
 
 
 SUBJECTS = [
@@ -18,7 +22,7 @@ SUBJECTS = [
         "id": 1,
         "name": "Mathematics",
         "level": "NECTA / KCSE",
-        "materials": 18,
+        "materials": 5,
         "tests": 6,
         "description": "Algebra, geometry, probability, and exam-style problem solving.",
     },
@@ -26,7 +30,7 @@ SUBJECTS = [
         "id": 2,
         "name": "English",
         "level": "NECTA / KCSE",
-        "materials": 14,
+        "materials": 2,
         "tests": 4,
         "description": "Grammar, comprehension, composition, and literature practice.",
     },
@@ -34,7 +38,7 @@ SUBJECTS = [
         "id": 3,
         "name": "Biology",
         "level": "NECTA / KCSE",
-        "materials": 16,
+        "materials": 4,
         "tests": 5,
         "description": "Cell biology, genetics, ecology, human biology, and lab skills.",
     },
@@ -42,7 +46,7 @@ SUBJECTS = [
         "id": 4,
         "name": "Chemistry",
         "level": "NECTA / KCSE",
-        "materials": 12,
+        "materials": 4,
         "tests": 5,
         "description": "Atomic structure, bonding, acids, organic chemistry, and calculations.",
     },
@@ -56,34 +60,275 @@ STUDENT_STATS = {
 }
 
 RECENT_RESULTS = [
-    {"test": "Mathematics Mock 3", "score": "82%", "date": "2026-06-15"},
-    {"test": "Biology Paper 2 Drill", "score": "76%", "date": "2026-06-12"},
-    {"test": "English Grammar Sprint", "score": "88%", "date": "2026-06-08"},
+    {"test": "Mathematics Mock 3", "score": "82%", "date": "2026-06-15", "remark": "Strong algebra work; revise word problems."},
+    {"test": "Biology Paper 2 Drill", "score": "76%", "date": "2026-06-12", "remark": "Good progress; diagrams need more labels."},
+    {"test": "English Grammar Sprint", "score": "88%", "date": "2026-06-08", "remark": "Excellent grammar accuracy."},
 ]
 
 USERS = [
-    {"fullname": "Student User", "email": "student@example.com", "role": "Student", "registered": "2026-06-10 14:30"},
-    {"fullname": "Admin User", "email": "admin@example.com", "role": "Administrator", "registered": "2026-06-09 09:15"},
+    {"id": 1, "fullname": "Student User", "email": "student@example.com", "role": "Student", "registered": "2026-06-10 14:30"},
+    {"id": 2, "fullname": "Admin User", "email": "admin@example.com", "role": "Administrator", "registered": "2026-06-09 09:15"},
 ]
 
 MATERIALS = [
-    {"title": "Mathematics Revision Guide", "subject": "Mathematics", "type": "PDF Notes"},
-    {"title": "Biology Model Answers", "subject": "Biology", "type": "Model Answers"},
-    {"title": "English Composition Pack", "subject": "English", "type": "Revision Guide"},
-    {"title": "Chemistry Practical Notes", "subject": "Chemistry", "type": "PDF Notes"},
+    {
+        "title": "Basic Mathematics Syllabus F1-F4 (2017)",
+        "subject": "Mathematics",
+        "type": "Syllabus",
+        "source_url": "https://maktaba.tetea.org/study-aids/o-level/syllabi/Syllabus - Basic Math - F1-F4 - 2017.pdf",
+    },
+    {
+        "title": "Shika na Mikono - Mathematics",
+        "subject": "Mathematics",
+        "type": "PDF Notes",
+        "source_url": "https://maktaba.tetea.org/study-aids/Shika na Mikono - Math v3-0.pdf",
+    },
+    {
+        "title": "The Circle and Theorems",
+        "subject": "Mathematics",
+        "type": "PDF Notes",
+        "source_url": "https://maktaba.tetea.org/study-aids/o-level/math/TheCircle-F3-Loibanguti(2022).pdf",
+    },
+    {
+        "title": "The Earth as a Sphere",
+        "subject": "Mathematics",
+        "type": "PDF Notes",
+        "source_url": "https://maktaba.tetea.org/study-aids/o-level/math/TheEarthAsASphere-F3-Loibanguti(2022).pdf",
+    },
+    {
+        "title": "Advanced Mathematics Syllabus F5-F6 (2017)",
+        "subject": "Mathematics",
+        "type": "Syllabus",
+        "source_url": "https://maktaba.tetea.org/study-aids/a-level/syllabi/Syllabus - Advanced Math - F5-F6 - 2017.pdf",
+    },
+    {
+        "title": "Biology Syllabus F1-F4 (2012)",
+        "subject": "Biology",
+        "type": "Syllabus",
+        "source_url": "https://maktaba.tetea.org/study-aids/o-level/syllabi/Syllabus - Biology - F1-F4 - 2012.pdf",
+    },
+    {
+        "title": "Biology Study Guide",
+        "subject": "Biology",
+        "type": "Revision Guide",
+        "source_url": "https://maktaba.tetea.org/study-aids/Abbey Secondary School Study Guides Final Biology.pdf",
+    },
+    {
+        "title": "Biology Practical Exam Guidelines",
+        "subject": "Biology",
+        "type": "PDF Notes",
+        "source_url": "https://maktaba.tetea.org/study-aids/practicals/Biology-PracticalGuidelines-2021.pdf",
+    },
+    {
+        "title": "Shika na Mikono - Biology",
+        "subject": "Biology",
+        "type": "PDF Notes",
+        "source_url": "https://maktaba.tetea.org/study-aids/Shika na Mikono - Biology v2-0.pdf",
+    },
+    {
+        "title": "Chemistry Syllabus F1-F4 (2017)",
+        "subject": "Chemistry",
+        "type": "Syllabus",
+        "source_url": "https://maktaba.tetea.org/study-aids/o-level/syllabi/Syllabus-Chemistry-F1-F4-2017.pdf",
+    },
+    {
+        "title": "Chemistry Study Guide",
+        "subject": "Chemistry",
+        "type": "Revision Guide",
+        "source_url": "https://maktaba.tetea.org/study-aids/Abbey Secondary School Study Guides Final Chemistry.pdf",
+    },
+    {
+        "title": "Chemistry Practical Exam Guidelines",
+        "subject": "Chemistry",
+        "type": "PDF Notes",
+        "source_url": "https://maktaba.tetea.org/study-aids/practicals/Chemistry-PracticalGuidelines-2021.pdf",
+    },
+    {
+        "title": "Shika na Mikono - Chemistry",
+        "subject": "Chemistry",
+        "type": "PDF Notes",
+        "source_url": "https://maktaba.tetea.org/study-aids/Shika na Mikono - Chemistry v2-0.pdf",
+    },
+    {
+        "title": "English Syllabus F1-F4 (2016)",
+        "subject": "English",
+        "type": "Syllabus",
+        "source_url": "https://maktaba.tetea.org/study-aids/o-level/syllabi/Syllabus - English - F1-F4 - 2016.pdf",
+    },
+    {
+        "title": "English Syllabus F5-F6 (2017)",
+        "subject": "English",
+        "type": "Syllabus",
+        "source_url": "https://maktaba.tetea.org/study-aids/a-level/syllabi/Syllabus - English - F5-F6 - 2017.pdf",
+    },
 ]
 
 PAST_PAPERS = [
-    {"subject": "Mathematics", "year": 2025, "paper": "Paper 1"},
-    {"subject": "Biology", "year": 2024, "paper": "Paper 2"},
-    {"subject": "English", "year": 2023, "paper": "Paper 1"},
-    {"subject": "Chemistry", "year": 2025, "paper": "Paper 2"},
+    {
+        "subject": "Mathematics",
+        "year": 2025,
+        "paper": "CSEE Basic Mathematics",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/basic_math/BasicMath-F4-2025.pdf",
+    },
+    {
+        "subject": "Mathematics",
+        "year": 2024,
+        "paper": "CSEE Basic Mathematics",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/basic_math/BasicMath-F4-2024.pdf",
+    },
+    {
+        "subject": "Mathematics",
+        "year": 2024,
+        "paper": "CSEE Basic Mathematics Solutions",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/basic_math/BasicMath-F4-2024-Solutions.pdf",
+    },
+    {
+        "subject": "Mathematics",
+        "year": 2025,
+        "paper": "ACSEE Advanced Mathematics Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/acsee/adv_math/AdvancedMath1-F6-2025.pdf",
+    },
+    {
+        "subject": "Biology",
+        "year": 2025,
+        "paper": "CSEE Biology Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/biology/Biology1-F4-2025.pdf",
+    },
+    {
+        "subject": "Biology",
+        "year": 2025,
+        "paper": "CSEE Biology Paper 1 Solutions",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/biology/Biology1-F4-2025-Solutions.pdf",
+    },
+    {
+        "subject": "Biology",
+        "year": 2024,
+        "paper": "CSEE Biology Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/biology/Biology1-F4-2024.pdf",
+    },
+    {
+        "subject": "Biology",
+        "year": 2025,
+        "paper": "ACSEE Biology Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/acsee/biology/Biology1-F6-2025.pdf",
+    },
+    {
+        "subject": "Chemistry",
+        "year": 2025,
+        "paper": "CSEE Chemistry Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/chemistry/Chemistry1-F4-2025.pdf",
+    },
+    {
+        "subject": "Chemistry",
+        "year": 2025,
+        "paper": "CSEE Chemistry Paper 1 Solutions",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/chemistry/Chemistry1-F4-2025-Solutions.pdf",
+    },
+    {
+        "subject": "Chemistry",
+        "year": 2024,
+        "paper": "CSEE Chemistry Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/chemistry/Chemistry1-F4-2024.pdf",
+    },
+    {
+        "subject": "Chemistry",
+        "year": 2025,
+        "paper": "ACSEE Chemistry Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/acsee/chemistry/Chemistry1-F6-2025.pdf",
+    },
+    {
+        "subject": "English",
+        "year": 2025,
+        "paper": "CSEE English Language",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/english/English-F4-2025.pdf",
+    },
+    {
+        "subject": "English",
+        "year": 2025,
+        "paper": "CSEE English Language Solutions",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/english/English-F4-2025-Solutions.pdf",
+    },
+    {
+        "subject": "English",
+        "year": 2024,
+        "paper": "CSEE English Language",
+        "source_url": "https://maktaba.tetea.org/past-papers/csee/english/English-F4-2024.pdf",
+    },
+    {
+        "subject": "English",
+        "year": 2025,
+        "paper": "ACSEE English Language Paper 1",
+        "source_url": "https://maktaba.tetea.org/past-papers/acsee/english/EnglishLanguage1-F6-2025.pdf",
+    },
 ]
 
 MOCK_TESTS = [
-    {"title": "Mathematics Full Mock", "subject": "Mathematics", "duration": 120, "marks": 100, "file_url": "", "file_name": ""},
-    {"title": "Biology Topic Test", "subject": "Biology", "duration": 60, "marks": 50, "file_url": "", "file_name": ""},
-    {"title": "English Language Mock", "subject": "English", "duration": 90, "marks": 80, "file_url": "", "file_name": ""},
+    {
+        "title": "Mathematics Full Mock",
+        "subject": "Mathematics",
+        "duration": 120,
+        "marks": 10,
+        "questions": [
+            {
+                "text": "What is the value of x in the equation 3x - 7 = 8?",
+                "answer": "B",
+                "marks": 5,
+                "options": ["x = 3", "x = 5", "x = 7", "x = 9"]
+            },
+            {
+                "text": "What is the derivative of x^2 with respect to x?",
+                "answer": "A",
+                "marks": 5,
+                "options": ["2x", "x", "2", "x^2"]
+            }
+        ],
+        "file_url": "",
+        "file_name": ""
+    },
+    {
+        "title": "Biology Topic Test",
+        "subject": "Biology",
+        "duration": 60,
+        "marks": 10,
+        "questions": [
+            {
+                "text": "Which organelle is known as the powerhouse of the cell?",
+                "answer": "C",
+                "marks": 5,
+                "options": ["Nucleus", "Ribosome", "Mitochondria", "Golgi apparatus"]
+            },
+            {
+                "text": "What is the primary site of photosynthesis in plants?",
+                "answer": "B",
+                "marks": 5,
+                "options": ["Stem", "Leaf", "Root", "Flower"]
+            }
+        ],
+        "file_url": "",
+        "file_name": ""
+    },
+    {
+        "title": "English Language Mock",
+        "subject": "English",
+        "duration": 90,
+        "marks": 10,
+        "questions": [
+            {
+                "text": "Choose the synonym of 'benevolent'.",
+                "answer": "A",
+                "marks": 5,
+                "options": ["Kind", "Malevolent", "Cruel", "Selfish"]
+            },
+            {
+                "text": "Identify the conjunction in: 'I wanted to go, but it started raining.'",
+                "answer": "D",
+                "marks": 5,
+                "options": ["wanted", "to", "raining", "but"]
+            }
+        ],
+        "file_url": "",
+        "file_name": ""
+    },
 ]
 
 NOTIFICATIONS = [
@@ -91,6 +336,514 @@ NOTIFICATIONS = [
     "Mathematics Full Mock is scheduled for Friday.",
     "Your Biology Paper 2 result is ready.",
 ]
+
+
+def get_db():
+    if "db" not in g:
+        g.db = sqlite3.connect(app.config["DATABASE"])
+        g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA foreign_keys = ON")
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(error=None):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+
+def db_execute(sql, params=()):
+    db = get_db()
+    cursor = db.execute(sql, params)
+    db.commit()
+    return cursor
+
+
+def db_all(sql, params=()):
+    return get_db().execute(sql, params).fetchall()
+
+
+def db_one(sql, params=()):
+    return get_db().execute(sql, params).fetchone()
+
+
+def normalize_date(value):
+    if isinstance(value, date):
+        return value.isoformat()
+    return value or date.today().isoformat()
+
+
+class DbRecord(dict):
+    def __init__(self, collection, data):
+        super().__init__(data)
+        self.collection = collection
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.collection.update_field(self["id"], key, value)
+
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError as exc:
+            raise AttributeError(key) from exc
+
+
+class DbCollection:
+    def __init__(self, table, columns, order_by="id ASC"):
+        self.table = table
+        self.columns = columns
+        self.order_by = order_by
+
+    def _record_from_row(self, row):
+        return DbRecord(self, dict(row))
+
+    def _rows(self):
+        return db_all(f"SELECT * FROM {self.table} ORDER BY {self.order_by}")
+
+    def __iter__(self):
+        return (self._record_from_row(row) for row in self._rows())
+
+    def __len__(self):
+        return db_one(f"SELECT COUNT(*) AS total FROM {self.table}")["total"]
+
+    def __getitem__(self, key):
+        rows = self._rows()
+        if isinstance(key, slice):
+            return [self._record_from_row(row) for row in rows[key]]
+        return self._record_from_row(rows[key])
+
+    def get(self, item_id):
+        row = db_one(f"SELECT * FROM {self.table} WHERE id = ?", (item_id,))
+        return self._record_from_row(row) if row else None
+
+    def append(self, item):
+        fields = [column for column in self.columns if column in item]
+        placeholders = ", ".join("?" for _ in fields)
+        db_execute(
+            f"INSERT INTO {self.table} ({', '.join(fields)}) VALUES ({placeholders})",
+            tuple(item.get(field) for field in fields),
+        )
+
+    def insert(self, index, item):
+        self.append(item)
+
+    def pop(self, index=-1):
+        item = self[index]
+        db_execute(f"DELETE FROM {self.table} WHERE id = ?", (item["id"],))
+        return item
+
+    def update_field(self, item_id, key, value):
+        if key in self.columns:
+            db_execute(f"UPDATE {self.table} SET {key} = ? WHERE id = ?", (value, item_id))
+
+
+class TestRecord(DbRecord):
+    def __init__(self, collection, data):
+        super().__init__(collection, data)
+        dict.__setitem__(self, "questions", QuestionCollection(data["id"]))
+
+
+class TestCollection(DbCollection):
+    def __init__(self):
+        super().__init__("tests", ["title", "subject", "duration", "marks", "file_url", "file_name"])
+
+    def _record_from_row(self, row):
+        return TestRecord(self, dict(row))
+
+    def append(self, item):
+        cursor = db_execute(
+            """
+            INSERT INTO tests (title, subject, duration, marks, file_url, file_name)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item.get("title", "New Test"),
+                item.get("subject", ""),
+                item.get("duration", 60),
+                item.get("marks", 100),
+                item.get("file_url", ""),
+                item.get("file_name", ""),
+            ),
+        )
+        test_id = cursor.lastrowid
+        for question in item.get("questions", []):
+            QuestionCollection(test_id).append(question)
+
+
+class QuestionCollection:
+    def __init__(self, test_id):
+        self.test_id = test_id
+
+    def _rows(self):
+        return db_all("SELECT * FROM questions WHERE test_id = ? ORDER BY id ASC", (self.test_id,))
+
+    def _record_from_row(self, row):
+        data = dict(row)
+        data["options"] = json.loads(data.get("options_json") or "[]")
+        data.pop("options_json", None)
+        return DbRecord(self, data)
+
+    def __iter__(self):
+        return (self._record_from_row(row) for row in self._rows())
+
+    def __len__(self):
+        return db_one("SELECT COUNT(*) AS total FROM questions WHERE test_id = ?", (self.test_id,))["total"]
+
+    def __getitem__(self, key):
+        rows = self._rows()
+        if isinstance(key, slice):
+            return [self._record_from_row(row) for row in rows[key]]
+        return self._record_from_row(rows[key])
+
+    def get(self, item_id):
+        row = db_one("SELECT * FROM questions WHERE test_id = ? AND id = ?", (self.test_id, item_id))
+        return self._record_from_row(row) if row else None
+
+    def __setitem__(self, key, item):
+        current = self[key]
+        self.replace(current["id"], item)
+
+    def replace(self, item_id, item):
+        db_execute(
+            """
+            UPDATE questions
+            SET test_id = ?, text = ?, answer = ?, marks = ?, remark = ?, options_json = ?
+            WHERE id = ?
+            """,
+            (
+                self.test_id,
+                item.get("text", "New question"),
+                item.get("answer", "A"),
+                item.get("marks", 1),
+                item.get("remark", ""),
+                json.dumps(item.get("options", [])),
+                item_id,
+            ),
+        )
+
+    def append(self, item):
+        db_execute(
+            """
+            INSERT INTO questions (test_id, text, answer, marks, remark, options_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                self.test_id,
+                item.get("text", "New question"),
+                item.get("answer", "A"),
+                item.get("marks", 1),
+                item.get("remark", ""),
+                json.dumps(item.get("options", [])),
+            ),
+        )
+
+    def pop(self, index=-1):
+        item = self[index]
+        self.delete(item["id"])
+        return item
+
+    def delete(self, item_id):
+        db_execute("DELETE FROM questions WHERE id = ?", (item_id,))
+
+    def update_field(self, item_id, key, value):
+        if key == "options":
+            key = "options_json"
+            value = json.dumps(value)
+        if key in {"test_id", "text", "answer", "marks", "remark", "options_json"}:
+            db_execute(f"UPDATE questions SET {key} = ? WHERE id = ?", (value, item_id))
+
+
+class ExamAttemptCollection(DbCollection):
+    def __init__(self):
+        super().__init__("exam_attempts", ["user_id", "test_id", "start_time", "end_time", "submitted_time", "status", "created_at"], "id DESC")
+
+    def append(self, item):
+        cursor = db_execute(
+            """
+            INSERT INTO exam_attempts (user_id, test_id, start_time, end_time, submitted_time, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item.get("user_id", 1),
+                item.get("test_id"),
+                item.get("start_time"),
+                item.get("end_time"),
+                item.get("submitted_time"),
+                item.get("status", "ACTIVE"),
+                item.get("created_at", datetime.now().isoformat()),
+            ),
+        )
+        return cursor.lastrowid
+
+    def start_exam(self, user_id, test_id, duration_minutes):
+        """Create a new exam attempt with calculated end time"""
+        start_time = datetime.now()
+        end_time = start_time + timedelta(minutes=duration_minutes)
+        
+        attempt_id = self.append({
+            "user_id": user_id,
+            "test_id": test_id,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "submitted_time": None,
+            "status": "ACTIVE",
+            "created_at": start_time.isoformat(),
+        })
+        return attempt_id
+
+    def get_active_attempt(self, user_id, test_id):
+        """Get the active exam attempt for a user and test"""
+        row = db_one(
+            """
+            SELECT * FROM exam_attempts 
+            WHERE user_id = ? AND test_id = ? AND status = 'ACTIVE'
+            ORDER BY id DESC LIMIT 1
+            """,
+            (user_id, test_id)
+        )
+        return self._record_from_row(row) if row else None
+
+    def get_attempt_status(self, attempt_id):
+        """Get current status and remaining time for an attempt"""
+        row = db_one("SELECT * FROM exam_attempts WHERE id = ?", (attempt_id,))
+        if not row:
+            return None
+        
+        attempt = self._record_from_row(row)
+        end_time = datetime.fromisoformat(attempt["end_time"])
+        current_time = datetime.now()
+        
+        if current_time >= end_time:
+            # Time expired
+            remaining_seconds = 0
+            status = "EXPIRED"
+        else:
+            remaining_seconds = int((end_time - current_time).total_seconds())
+            status = attempt["status"]
+        
+        return {
+            "id": attempt["id"],
+            "status": status,
+            "remaining_seconds": remaining_seconds,
+            "end_time": attempt["end_time"],
+            "start_time": attempt["start_time"],
+            "current_server_time": current_time.isoformat(),
+        }
+
+    def submit_attempt(self, attempt_id):
+        """Mark an attempt as submitted"""
+        db_execute(
+            "UPDATE exam_attempts SET status = 'SUBMITTED', submitted_time = ? WHERE id = ?",
+            (datetime.now().isoformat(), attempt_id)
+        )
+
+
+def create_schema():
+    db = get_db()
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS subjects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            level TEXT DEFAULT '',
+            materials INTEGER DEFAULT 0,
+            tests INTEGER DEFAULT 0,
+            description TEXT DEFAULT ''
+        );
+
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fullname TEXT NOT NULL,
+            email TEXT NOT NULL,
+            role TEXT NOT NULL,
+            registered TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS materials (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            subject TEXT DEFAULT '',
+            type TEXT DEFAULT '',
+            file_url TEXT DEFAULT '',
+            source_url TEXT DEFAULT ''
+        );
+
+        CREATE TABLE IF NOT EXISTS past_papers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            subject TEXT DEFAULT '',
+            year INTEGER DEFAULT 0,
+            paper TEXT DEFAULT '',
+            file_url TEXT DEFAULT '',
+            source_url TEXT DEFAULT ''
+        );
+
+        CREATE TABLE IF NOT EXISTS tests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            subject TEXT DEFAULT '',
+            duration INTEGER DEFAULT 60,
+            marks INTEGER DEFAULT 100,
+            file_url TEXT DEFAULT '',
+            file_name TEXT DEFAULT ''
+        );
+
+        CREATE TABLE IF NOT EXISTS questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            test_id INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            answer TEXT DEFAULT 'A',
+            marks INTEGER DEFAULT 1,
+            remark TEXT DEFAULT '',
+            options_json TEXT DEFAULT '[]',
+            FOREIGN KEY (test_id) REFERENCES tests (id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            test TEXT NOT NULL,
+            score TEXT DEFAULT '',
+            date TEXT NOT NULL,
+            time_spent TEXT DEFAULT '',
+            remark TEXT DEFAULT ''
+        );
+
+        CREATE TABLE IF NOT EXISTS notifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS exam_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            test_id INTEGER NOT NULL,
+            start_time TEXT NOT NULL,
+            end_time TEXT NOT NULL,
+            submitted_time TEXT,
+            status TEXT DEFAULT 'ACTIVE',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (test_id) REFERENCES tests (id) ON DELETE CASCADE
+        );
+        """
+    )
+    db.commit()
+
+
+def table_is_empty(table):
+    return db_one(f"SELECT COUNT(*) AS total FROM {table}")["total"] == 0
+
+
+def seed_database():
+    if table_is_empty("subjects"):
+        for subject in SUBJECTS:
+            db_execute(
+                """
+                INSERT INTO subjects (id, name, level, materials, tests, description)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    subject.get("id"),
+                    subject.get("name", ""),
+                    subject.get("level", ""),
+                    subject.get("materials", 0),
+                    subject.get("tests", 0),
+                    subject.get("description", ""),
+                ),
+            )
+
+    if table_is_empty("users"):
+        for user in USERS:
+            db_execute(
+                "INSERT INTO users (id, fullname, email, role, registered) VALUES (?, ?, ?, ?, ?)",
+                (
+                    user.get("id"),
+                    user.get("fullname", ""),
+                    user.get("email", ""),
+                    user.get("role", "Student"),
+                    user.get("registered", datetime.now().strftime("%Y-%m-%d %H:%M")),
+                ),
+            )
+
+    if table_is_empty("materials"):
+        for material in MATERIALS:
+            db_execute(
+                """
+                INSERT INTO materials (title, subject, type, file_url, source_url)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    material.get("title", ""),
+                    material.get("subject", ""),
+                    material.get("type", ""),
+                    material.get("file_url", ""),
+                    material.get("source_url", ""),
+                ),
+            )
+
+    if table_is_empty("past_papers"):
+        for paper in PAST_PAPERS:
+            db_execute(
+                """
+                INSERT INTO past_papers (subject, year, paper, file_url, source_url)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    paper.get("subject", ""),
+                    paper.get("year", 0),
+                    paper.get("paper", ""),
+                    paper.get("file_url", ""),
+                    paper.get("source_url", ""),
+                ),
+            )
+
+    if table_is_empty("tests"):
+        for test in MOCK_TESTS:
+            MOCK_TESTS_DB.append(test)
+
+    if table_is_empty("results"):
+        for result in RECENT_RESULTS:
+            db_execute(
+                """
+                INSERT INTO results (test, score, date, time_spent, remark)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    result.get("test", ""),
+                    result.get("score", ""),
+                    normalize_date(result.get("date")),
+                    result.get("time_spent", ""),
+                    result.get("remark", ""),
+                ),
+            )
+
+    if table_is_empty("notifications"):
+        for notification in NOTIFICATIONS:
+            db_execute("INSERT INTO notifications (message) VALUES (?)", (notification,))
+
+
+SUBJECTS_DB = DbCollection("subjects", ["name", "level", "materials", "tests", "description"])
+USERS_DB = DbCollection("users", ["fullname", "email", "role", "registered"])
+MATERIALS_DB = DbCollection("materials", ["title", "subject", "type", "file_url", "source_url"])
+PAST_PAPERS_DB = DbCollection("past_papers", ["subject", "year", "paper", "file_url", "source_url"])
+MOCK_TESTS_DB = TestCollection()
+RECENT_RESULTS_DB = DbCollection("results", ["test", "score", "date", "time_spent", "remark"], "id DESC")
+NOTIFICATIONS_DB = DbCollection("notifications", ["message"])
+EXAM_ATTEMPTS_DB = ExamAttemptCollection()
+
+
+with app.app_context():
+    create_schema()
+    seed_database()
+
+SUBJECTS = SUBJECTS_DB
+USERS = USERS_DB
+MATERIALS = MATERIALS_DB
+PAST_PAPERS = PAST_PAPERS_DB
+MOCK_TESTS = MOCK_TESTS_DB
+RECENT_RESULTS = RECENT_RESULTS_DB
+NOTIFICATIONS = NOTIFICATIONS_DB
+EXAM_ATTEMPTS = EXAM_ATTEMPTS_DB
 
 
 PUBLIC_NAV = [
@@ -178,6 +931,10 @@ def form_int(name, default=0):
         return int(request.form.get(name, default))
     except (TypeError, ValueError):
         return default
+
+
+def form_text(name, default=""):
+    return (request.form.get(name) or default).strip()
 
 
 def format_elapsed_time(total_seconds):
@@ -282,6 +1039,7 @@ def login():
         registered=registered,
         pending_role=session.get("pending_login_role", "student"),
         pending_email=session.get("pending_login_email", ""),
+        pending_name=session.get("pending_login_name", ""),
         next_path=session.get("auth_next", ""),
     )
 
@@ -296,7 +1054,9 @@ def register():
         fullname = request.form.get("fullname", "Student User").strip() or "Student User"
         email = request.form.get("email", "")
         role = request.form.get("role", "Student")
-        USERS.append({"fullname": fullname, "email": email, "role": role, "registered": datetime.now().strftime("%Y-%m-%d %H:%M")})
+        # Assign a new unique ID to the user
+        next_id = max((u.get("id", 0) for u in USERS), default=0) + 1
+        USERS.append({"id": next_id, "fullname": fullname, "email": email, "role": role, "registered": datetime.now().strftime("%Y-%m-%d %H:%M")})
         session["pending_login_role"] = normalize_role(role)
         session["pending_login_email"] = email
         session["pending_login_name"] = fullname
@@ -326,7 +1086,30 @@ def student_dashboard():
 @app.route("/student/profile", methods=["GET", "POST"])
 @login_required("student")
 def student_profile():
-    submitted = request.method == "POST"
+    submitted = False
+    if request.method == "POST":
+        fullname = request.form.get("fullname", "").strip()
+        email = request.form.get("email", "").strip()
+        exam_focus = request.form.get("exam_focus", "").strip()
+        
+        if fullname:
+            session["user_name"] = fullname
+        if email:
+            session["user_email"] = email
+        if exam_focus:
+            session["exam_focus"] = exam_focus
+            
+        # Also update the user in USERS list
+        current_email = session.get("user_email")
+        for u in USERS:
+            if u["email"] == current_email or u["fullname"] == session.get("user_name"):
+                if fullname:
+                    u["fullname"] = fullname
+                if email:
+                    u["email"] = email
+                break
+        
+        submitted = True
     return render_template("student/profile.html", title="Profile", submitted=submitted)
 
 
@@ -351,25 +1134,120 @@ def student_mock_tests():
 @app.route("/student/mock-tests/<int:test_id>")
 @login_required("student")
 def student_take_test(test_id):
-    test = MOCK_TESTS[test_id - 1] if 0 < test_id <= len(MOCK_TESTS) else MOCK_TESTS[0]
+    test = MOCK_TESTS.get(test_id) or MOCK_TESTS[0]
     return render_template("student/take_test.html", title="Take Mock Test", test=test, test_id=test_id)
 
 
 @app.route("/student/mock-tests/<int:test_id>/submit", methods=["POST"])
 @login_required("student")
 def student_submit_test(test_id):
-    test = MOCK_TESTS[test_id - 1] if 0 < test_id <= len(MOCK_TESTS) else MOCK_TESTS[0]
+    test = MOCK_TESTS.get(test_id) or MOCK_TESTS[0]
     elapsed_seconds = form_int("elapsed_seconds")
+    attempt_id = request.form.get("attempt_id")
+    
+    # Mark the attempt as submitted
+    if attempt_id:
+        EXAM_ATTEMPTS.submit_attempt(int(attempt_id))
+    
+    questions = test.get("questions", [])
+    total_marks = 0
+    obtained_marks = 0
+    
+    if questions:
+        for idx, question in enumerate(questions, 1):
+            selected_answer = request.form.get(f"q{idx}")
+            correct_answer = question.get("answer")
+            q_marks = question.get("marks", 1)
+            total_marks += q_marks
+            if selected_answer == correct_answer:
+                obtained_marks += q_marks
+        
+        percentage = int((obtained_marks / total_marks) * 100) if total_marks > 0 else 100
+        score = f"{percentage}%"
+    else:
+        # Fallback if no questions are defined for this test
+        selected_answer = request.form.get("q1")
+        if selected_answer == "A":
+            score = "100%"
+        else:
+            score = "0%"
+            
     RECENT_RESULTS.insert(
         0,
         {
             "test": test["title"],
-            "score": "Submitted",
+            "score": score,
             "date": date.today().isoformat(),
             "time_spent": format_elapsed_time(elapsed_seconds),
         },
     )
+    
+    # Recalculate STUDENT_STATS
+    total_percentage = 0
+    count = 0
+    for res in RECENT_RESULTS:
+        score_str = res.get("score", "")
+        if "%" in score_str:
+            try:
+                val = int(score_str.split("%")[0].strip())
+                total_percentage += val
+                count += 1
+            except ValueError:
+                pass
+    if count > 0:
+        STUDENT_STATS["average_score"] = f"{int(total_percentage / count)}%"
+    STUDENT_STATS["tests_taken"] = count
+    
     return redirect(url_for("student_results"))
+
+
+@app.route("/api/exam-attempt/start", methods=["POST"])
+@login_required("student")
+def api_start_exam_attempt():
+    """Start a new exam attempt and return the attempt ID"""
+    user_id = session.get("user_id", 1)
+    test_id = request.json.get("test_id")
+    
+    if not test_id:
+        return jsonify({"error": "test_id is required"}), 400
+    
+    test = MOCK_TESTS.get(test_id)
+    if not test:
+        return jsonify({"error": "Test not found"}), 404
+    
+    # Check if there's already an active attempt
+    existing_attempt = EXAM_ATTEMPTS.get_active_attempt(user_id, test_id)
+    if existing_attempt:
+        attempt_id = existing_attempt["id"]
+    else:
+        # Create new exam attempt
+        attempt_id = EXAM_ATTEMPTS.start_exam(user_id, test_id, test.get("duration", 60))
+    
+    # Get the attempt status to return current times
+    status = EXAM_ATTEMPTS.get_attempt_status(attempt_id)
+    return jsonify({
+        "attempt_id": attempt_id,
+        **status
+    }), 200
+
+
+@app.route("/api/exam-attempt/<int:attempt_id>/status", methods=["GET"])
+@login_required("student")
+def api_get_exam_attempt_status(attempt_id):
+    """Get the current status and remaining time for an exam attempt"""
+    status = EXAM_ATTEMPTS.get_attempt_status(attempt_id)
+    if not status:
+        return jsonify({"error": "Attempt not found"}), 404
+    
+    return jsonify(status), 200
+
+
+@app.route("/api/exam-attempt/<int:attempt_id>/submit", methods=["POST"])
+@login_required("student")
+def api_submit_exam_attempt(attempt_id):
+    """Submit an exam attempt"""
+    EXAM_ATTEMPTS.submit_attempt(attempt_id)
+    return jsonify({"success": True}), 200
 
 
 @app.route("/student/results")
@@ -404,11 +1282,15 @@ def admin_users():
 @login_required("admin")
 def admin_user_form():
     if request.method == "POST":
+        # Assign a new unique ID to the user
+        next_id = max((u.get("id", 0) for u in USERS), default=0) + 1
         USERS.append(
             {
+                "id": next_id,
                 "fullname": request.form.get("fullname", "New User"),
                 "email": request.form.get("email", ""),
                 "role": request.form.get("role", "Student"),
+                "registered": datetime.now().strftime("%Y-%m-%d %H:%M"), # Added for consistency
             }
         )
         return redirect(url_for("admin_users"))
@@ -429,7 +1311,7 @@ def admin_user_form():
 @app.route("/admin/users/<int:user_id>/delete", methods=["POST"])
 @login_required("admin")
 def admin_delete_user(user_id):
-    delete_by_index(USERS, user_id)
+    delete_by_id(USERS, user_id) # Use delete_by_id instead of delete_by_index
     return redirect(url_for("admin_users"))
 
 
@@ -532,7 +1414,7 @@ def admin_material_form():
         fields=[
             {"label": "Title", "name": "title", "type": "text"},
             {"label": "Subject", "name": "subject", "type": "select", "options": [subject["name"] for subject in SUBJECTS]},
-            {"label": "Material type", "name": "type", "type": "select", "options": ["PDF Notes", "Revision Guide", "Model Answers"]},
+            {"label": "Material type", "name": "type", "type": "select", "options": ["PDF Notes", "Revision Guide", "Model Answers", "Syllabus"]},
             {"label": "Upload file", "name": "upload_file", "type": "file", "accept": ".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"},
             {"label": "External URL", "name": "source_url", "type": "url"},
         ],
@@ -542,7 +1424,7 @@ def admin_material_form():
 @app.route("/admin/materials/<int:material_id>/delete", methods=["POST"])
 @login_required("admin")
 def admin_delete_material(material_id):
-    delete_by_index(MATERIALS, material_id)
+    delete_by_id(MATERIALS, material_id)
     return redirect(url_for("admin_materials"))
 
 
@@ -586,7 +1468,7 @@ def admin_paper_form():
 @app.route("/admin/past-papers/<int:paper_id>/delete", methods=["POST"])
 @login_required("admin")
 def admin_delete_paper(paper_id):
-    delete_by_index(PAST_PAPERS, paper_id)
+    delete_by_id(PAST_PAPERS, paper_id)
     return redirect(url_for("admin_past_papers"))
 
 
@@ -602,8 +1484,8 @@ def admin_test_form():
     if request.method == "POST":
         MOCK_TESTS.append(
             {
-                "title": request.form.get("title", "New Test"),
-                "subject": request.form.get("subject", ""),
+                "title": form_text("title", "New Test") or "New Test",
+                "subject": form_text("subject"),
                 "duration": form_int("duration", 60),
                 "marks": form_int("total_marks", 100),
                 "questions": [],
@@ -632,7 +1514,7 @@ def admin_test_form():
 @app.route("/admin/tests/<int:test_id>/delete", methods=["POST"])
 @login_required("admin")
 def admin_delete_test(test_id):
-    delete_by_index(MOCK_TESTS, test_id)
+    delete_by_id(MOCK_TESTS, test_id)
     return redirect(url_for("admin_tests"))
 
 
@@ -643,8 +1525,8 @@ def admin_test_upload_external():
         uploaded_file_url = save_uploaded_file("upload_file")
         MOCK_TESTS.append(
             {
-                "title": request.form.get("title", "External Test"),
-                "subject": request.form.get("subject", ""),
+                "title": form_text("title", "External Test") or "External Test",
+                "subject": form_text("subject"),
                 "duration": form_int("duration", 60),
                 "marks": form_int("total_marks", 100),
                 "questions": [],
@@ -676,41 +1558,127 @@ def admin_questions():
     return render_template("admin/questions.html", title="Manage Questions", tests=MOCK_TESTS)
 
 
+def test_select_options():
+    options = []
+    for test in MOCK_TESTS:
+        title = (test.get("title") or "").strip() or f"Test {test['id']}"
+        subject = (test.get("subject") or "").strip()
+        label = f"{title} ({subject})" if subject else title
+        options.append({"label": label, "value": test["id"]})
+    return options
+
+
+def question_from_form():
+    return {
+        "text": form_text("question", "New question") or "New question",
+        "answer": form_text("correct_answer", "A") or "A",
+        "marks": form_int("marks", 1),
+        "remark": form_text("remark"),
+        "options": [
+            form_text("option_a", "Option A"),
+            form_text("option_b", "Option B"),
+            form_text("option_c", "Option C"),
+            form_text("option_d", "Option D"),
+        ],
+    }
+
+
+def render_question_form(title, selected_test_id="", question=None):
+    question = question or {}
+    options = question.get("options") or ["Option A", "Option B", "Option C", "Option D"]
+    return render_template(
+        "admin/form.html",
+        title=title,
+        submitted=False,
+        return_endpoint="admin_questions",
+        fields=[
+            {"label": "Test", "name": "test_id", "type": "select", "options": test_select_options(), "value": selected_test_id},
+            {"label": "Question", "name": "question", "type": "textarea", "value": question.get("text", "")},
+            {"label": "Option A", "name": "option_a", "type": "text", "value": options[0]},
+            {"label": "Option B", "name": "option_b", "type": "text", "value": options[1]},
+            {"label": "Option C", "name": "option_c", "type": "text", "value": options[2]},
+            {"label": "Option D", "name": "option_d", "type": "text", "value": options[3]},
+            {"label": "Correct answer", "name": "correct_answer", "type": "select", "options": ["A", "B", "C", "D"], "value": question.get("answer", "A")},
+            {"label": "Marks", "name": "marks", "type": "number", "value": question.get("marks", 1)},
+            {"label": "Remarks", "name": "remark", "type": "textarea", "value": question.get("remark", "")},
+        ],
+    )
+
+
 @app.route("/admin/questions/new", methods=["GET", "POST"])
 @login_required("admin")
 def admin_question_form():
     if request.method == "POST":
-        selected_title = request.form.get("test")
-        question = {
-            "text": request.form.get("question", "New question"),
-            "answer": request.form.get("correct_answer", "A"),
-            "marks": form_int("marks", 1),
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-        }
-        for test in MOCK_TESTS:
-            if test["title"] == selected_title:
-                test.setdefault("questions", []).append(question)
-                break
+        selected_test_id = form_int("test_id", 0)
+        test = MOCK_TESTS.get(selected_test_id)
+        if test:
+            test.setdefault("questions", []).append(question_from_form())
         return redirect(url_for("admin_questions"))
 
-    return render_template(
-        "admin/form.html",
-        title="Add Question",
-        submitted=False,
-        return_endpoint="admin_questions",
-        fields=[
-            {"label": "Test", "name": "test", "type": "select", "options": [test["title"] for test in MOCK_TESTS]},
-            {"label": "Question", "name": "question", "type": "textarea"},
-            {"label": "Correct answer", "name": "correct_answer", "type": "select", "options": ["A", "B", "C", "D"]},
-            {"label": "Marks", "name": "marks", "type": "number"},
-        ],
-    )
+    selected_test_id = request.args.get("test_id", type=int) or (MOCK_TESTS[0]["id"] if MOCK_TESTS else "")
+    return render_question_form("Add Question", selected_test_id)
+
+
+@app.route("/admin/questions/<int:test_id>/<int:question_id>/edit", methods=["GET", "POST"])
+@login_required("admin")
+def admin_edit_question(test_id, question_id):
+    test = MOCK_TESTS.get(test_id)
+    if not test:
+        return redirect(url_for("admin_questions"))
+
+    questions = test.setdefault("questions", [])
+    question = questions.get(question_id)
+    if not question:
+        return redirect(url_for("admin_questions"))
+
+    if request.method == "POST":
+        selected_test_id = form_int("test_id", test_id)
+        updated_question = question_from_form()
+        selected_test = MOCK_TESTS.get(selected_test_id)
+        if selected_test:
+            if selected_test_id == test_id:
+                questions.replace(question_id, updated_question)
+            else:
+                questions.delete(question_id)
+                selected_test.setdefault("questions", []).append(updated_question)
+        return redirect(url_for("admin_questions"))
+
+    return render_question_form("Edit Question", test_id, question)
+
+
+@app.route("/admin/questions/<int:test_id>/<int:question_id>/delete", methods=["POST"])
+@login_required("admin")
+def admin_delete_question(test_id, question_id):
+    test = MOCK_TESTS.get(test_id)
+    if test:
+        questions = test.setdefault("questions", [])
+        if questions.get(question_id):
+            questions.delete(question_id)
+    return redirect(url_for("admin_questions"))
 
 
 @app.route("/admin/reports")
 @login_required("admin")
 def admin_reports():
     return render_template("admin/reports.html", title="Reports", results=RECENT_RESULTS)
+
+
+@app.route("/admin/reports/<int:result_id>/remark", methods=["POST"])
+@login_required("admin")
+def admin_update_report_remark(result_id):
+    result = RECENT_RESULTS.get(result_id)
+    if result:
+        RECENT_RESULTS.update_field(result_id, "remark", form_text("remark"))
+    return redirect(url_for("admin_reports"))
+
+
+@app.route("/admin/reports/<int:result_id>/remark/delete", methods=["POST"])
+@login_required("admin")
+def admin_delete_report_remark(result_id):
+    result = RECENT_RESULTS.get(result_id)
+    if result:
+        RECENT_RESULTS.update_field(result_id, "remark", "")
+    return redirect(url_for("admin_reports"))
 
 
 @app.route("/health/routes")

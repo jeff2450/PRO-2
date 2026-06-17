@@ -9,7 +9,7 @@
                 <p class="eyebrow">{{ test.subject }}</p>
                 <h2>{{ test.title }}</h2>
                 <p>{{ test.duration }} minutes · {{ test.marks }} marks</p>
-                <a class="button button-small" href="{{ url_for('student_take_test', test_id=loop.index) }}">Start Test</a>
+                <a class="button button-small" href="{{ url_for('student_take_test', test_id=test.id) }}">Start Test</a>
             </article>
         {% endfor %}
     </div>

@@ -27,7 +27,7 @@
                         <td>
                             <div class="row-actions">
                                 <a href="{{ url_for('admin_paper_form') }}">Edit</a>
-                                <form method="post" action="{{ url_for('admin_delete_paper', paper_id=loop.index) }}">
+                                <form method="post" action="{{ url_for('admin_delete_paper', paper_id=paper.id) }}">
                                     {{ delete_icon_button("Delete paper") }}
                                 </form>
                             </div>

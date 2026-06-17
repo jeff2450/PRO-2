@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros.html" import admin_shell with context %}
+{% from "macros.html" import admin_shell, delete_icon_button with context %}
 
 {% block content %}
 {% call admin_shell(title) %}
@@ -11,8 +11,26 @@
         {% for test in tests %}
             <div class="list-row">
                 <span>{{ test.title }} <small>{{ test.questions|default([])|length }} questions</small></span>
-                <a href="{{ url_for('admin_question_form') }}">Manage questions</a>
+                <a href="{{ url_for('admin_question_form', test_id=test.id) }}">Manage questions</a>
             </div>
+            {% set test_id = test.id %}
+            {% for question in test.questions|default([]) %}
+                <div class="list-row">
+                    <span>
+                        {{ question.text }}
+                        <small>{{ question.marks }} marks · answer {{ question.answer }}</small>
+                        {% if question.remark %}
+                            <small>{{ question.remark }}</small>
+                        {% endif %}
+                    </span>
+                    <div class="card-actions">
+                        <a href="{{ url_for('admin_edit_question', test_id=test_id, question_id=question.id) }}">Edit</a>
+                        <form method="post" action="{{ url_for('admin_delete_question', test_id=test_id, question_id=question.id) }}">
+                            {{ delete_icon_button("Delete question") }}
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
         {% endfor %}
     </div>
 {% endcall %}

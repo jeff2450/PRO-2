@@ -3,39 +3,44 @@
 
 {% block content %}
 {% call student_shell(title) %}
-    <article class="panel test-panel">
+    <article class="panel test-panel" data-test-id="{{ test_id }}">
         <div class="test-header">
             <div>
                 <p class="eyebrow">{{ test.subject }}</p>
                 <h2>{{ test.title }}</h2>
             </div>
             <div class="test-meta">
-                <strong>{{ test.duration }} min</strong>
-                <div class="test-timer" data-test-timer>
-                    <span>Time spent</span>
-                    <strong data-timer-display>00:00</strong>
+                <div class="test-timer" data-test-timer data-duration-seconds="{{ test.duration * 60 }}">
+                    <span>Time remaining</span>
+                    <strong data-timer-display>{{ test.duration }}m 00s</strong>
                 </div>
             </div>
         </div>
         <form method="post" action="{{ url_for('student_submit_test', test_id=test_id) }}" data-test-form>
             <input type="hidden" name="elapsed_seconds" value="0" data-elapsed-seconds>
+            <input type="hidden" name="attempt_id" value="">
             {% set questions = test.questions|default([]) %}
             {% if questions %}
                 {% for question in questions %}
+                    {% set question_idx = loop.index %}
                     <fieldset>
-                        <legend>{{ loop.index }}. {{ question.text }}</legend>
+                        <legend>{{ question_idx }}. {{ question.text }} ({{ question.marks }} marks)</legend>
                         {% for option in question.options %}
-                            <label><input type="radio" name="q{{ loop.index }}"> {{ option }}</label>
+                            {% set option_letter = ['A', 'B', 'C', 'D'][loop.index0] %}
+                            <label>
+                                <input type="radio" name="q{{ question_idx }}" value="{{ option_letter }}">
+                                {{ option_letter }}. {{ option }}
+                            </label>
                         {% endfor %}
                     </fieldset>
                 {% endfor %}
             {% else %}
                 <fieldset>
                     <legend>1. Which answer best fits this sample question?</legend>
-                    <label><input type="radio" name="q1"> Option A</label>
-                    <label><input type="radio" name="q1"> Option B</label>
-                    <label><input type="radio" name="q1"> Option C</label>
-                    <label><input type="radio" name="q1"> Option D</label>
+                    <label><input type="radio" name="q1" value="A"> Option A</label>
+                    <label><input type="radio" name="q1" value="B"> Option B</label>
+                    <label><input type="radio" name="q1" value="C"> Option C</label>
+                    <label><input type="radio" name="q1" value="D"> Option D</label>
                 </fieldset>
             {% endif %}
             <div class="quick-actions">
@@ -45,4 +50,5 @@
         </form>
     </article>
 {% endcall %}
+<script src="{{ url_for('static', filename='js/exam-timer.js') }}"></script>
 {% endblock %}

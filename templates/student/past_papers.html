@@ -3,27 +3,26 @@
 
 {% block content %}
 {% call student_shell(title) %}
-    <div class="toolbar">
-        <select aria-label="Filter by subject">
-            <option>All subjects</option>
-            <option>Mathematics</option>
-            <option>Biology</option>
-            <option>English</option>
-            <option>Chemistry</option>
+    <div class="toolbar" data-resource-filters data-target-table="past-papers-table">
+        <select aria-label="Filter by subject" data-subject-filter>
+            <option value="">All subjects</option>
+            {% for subject in papers|map(attribute="subject")|unique %}
+                <option value="{{ subject }}">{{ subject }}</option>
+            {% endfor %}
         </select>
-        <select aria-label="Filter by year">
-            <option>All years</option>
-            <option>2025</option>
-            <option>2024</option>
-            <option>2023</option>
+        <select aria-label="Filter by year" data-year-filter>
+            <option value="">All years</option>
+            {% for year in papers|map(attribute="year")|unique %}
+                <option value="{{ year }}">{{ year }}</option>
+            {% endfor %}
         </select>
     </div>
     <div class="table-card">
-        <table>
+        <table id="past-papers-table">
             <thead><tr><th>Subject</th><th>Year</th><th>Paper</th><th>Actions</th></tr></thead>
             <tbody>
                 {% for paper in papers %}
-                    <tr>
+                    <tr data-subject="{{ paper.subject }}" data-year="{{ paper.year }}">
                         <td>{{ paper.subject }}</td>
                         <td>{{ paper.year }}</td>
                         <td>{{ paper.paper }}</td>

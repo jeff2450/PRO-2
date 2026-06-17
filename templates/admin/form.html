@@ -12,7 +12,11 @@
                 {% if field.type == "select" %}
                     <select name="{{ field.name }}">
                         {% for option in field.options %}
-                            <option{% if field.value == option %} selected{% endif %}>{{ option }}</option>
+                            {% if option is mapping %}
+                                <option value="{{ option['value'] }}"{% if field.value|string == option['value']|string %} selected{% endif %}>{{ option['label'] }}</option>
+                            {% else %}
+                                <option{% if field.value == option %} selected{% endif %}>{{ option }}</option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 {% elif field.type == "textarea" %}

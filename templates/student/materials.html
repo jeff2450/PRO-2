@@ -3,16 +3,16 @@
 
 {% block content %}
 {% call student_shell(title) %}
-    <div class="toolbar">
-        <input aria-label="Search materials" placeholder="Search materials">
+    <div class="toolbar" data-resource-filters data-target-table="materials-table">
+        <input aria-label="Search materials" placeholder="Search materials" data-search-filter>
         <a class="button button-small button-secondary" href="{{ url_for('subjects') }}">Browse Subjects</a>
     </div>
     <div class="table-card">
-        <table>
+        <table id="materials-table">
             <thead><tr><th>Title</th><th>Subject</th><th>Type</th><th>Action</th></tr></thead>
             <tbody>
                 {% for material in materials %}
-                    <tr>
+                    <tr data-search-text="{{ (material.title ~ ' ' ~ material.subject ~ ' ' ~ material.type)|lower }}">
                         <td>{{ material.title }}</td>
                         <td>{{ material.subject }}</td>
                         <td>{{ material.type }}</td>

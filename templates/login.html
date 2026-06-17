@@ -13,7 +13,7 @@
     </div>
     <form method="post" class="form-card">
         {% if registered %}
-            <div class="notice">Registration successful. Login to continue.</div>
+            <div class="notice">Registration successful. Welcome, {{ pending_name }}! Login to continue.</div>
         {% endif %}
         {% if next_path %}
             <input type="hidden" name="next" value="{{ next_path }}">

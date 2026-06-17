@@ -5,14 +5,14 @@
 {% call student_shell(title) %}
     <form method="post" class="form-card inline-form">
         {% if submitted %}
-            <div class="notice">Profile saved successfully in demo mode.</div>
+            <div class="notice">Profile saved successfully.</div>
         {% endif %}
-        <label>Full name <input value="Student User"></label>
-        <label>Email <input type="email" value="student@example.com"></label>
+        <label>Full name <input name="fullname" value="{{ session.get('user_name', '') or current_user_name }}"></label>
+        <label>Email <input type="email" name="email" value="{{ session.get('user_email', '') or 'student@example.com' }}"></label>
         <label>Exam focus
-            <select>
-                <option>NECTA</option>
-                <option>KCSE</option>
+            <select name="exam_focus">
+                <option {% if session.get('exam_focus') == 'NECTA' %}selected{% endif %}>NECTA</option>
+                <option {% if session.get('exam_focus') == 'KCSE' %}selected{% endif %}>KCSE</option>
             </select>
         </label>
         <button class="button" type="submit">Save Profile</button>
