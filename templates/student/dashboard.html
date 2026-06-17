@@ -1,34 +1,48 @@
 {% extends "base.html" %}
-{% from "macros.html" import student_shell with context %}
+{% from "macros.html" import student_shell, app_icon with context %}
 
 {% block content %}
 {% call student_shell(title) %}
-    <section class="dashboard-hero">
-        <div class="hero-metrics">
-            <article><strong>{{ stats.tests_taken }}</strong><span>Tests taken</span></article>
-            <article><strong>{{ stats.average_score }}</strong><span>Avg score</span></article>
-            <article><strong>{{ stats.materials_read }}</strong><span>Materials</span></article>
-        </div>
+    <section class="dashboard-header">
         <div>
-            <h1>Welcome back, {{ current_user_name }}!</h1>
-            <p>Keep up the great work. Your next mock test is available now.</p>
+            <p class="eyebrow">Student workspace</p>
+            <h1>Welcome back, {{ current_user_name }}</h1>
+            <p>Keep your revision moving with mock tests, study materials, past papers, and clear progress tracking.</p>
         </div>
         <div class="hero-actions">
-            <a class="button hero-button" href="{{ url_for('student_mock_tests') }}"><span aria-hidden="true">+</span>Start Mock Test</a>
-            <a class="button hero-button" href="{{ url_for('student_materials') }}"><span aria-hidden="true">#</span>Study Materials</a>
+            <a class="button" href="{{ url_for('student_mock_tests') }}">{{ app_icon("test") }}Start Mock Test</a>
+            <a class="button button-secondary" href="{{ url_for('student_materials') }}">{{ app_icon("book") }}Study Materials</a>
         </div>
     </section>
 
-    <div class="stats-grid compact dashboard-cards">
-        <article><span>Total tests</span><strong>{{ stats.tests_taken }}</strong><small>+2 this week</small></article>
-        <article><span>Average score</span><strong class="success-text">{{ stats.average_score }}</strong><small>Keep it up!</small></article>
-        <article><span>Best subject</span><strong class="warning-text">Maths</strong><small>87% avg</small></article>
-        <article><span>Study streak</span><strong class="teal-text">5 days</strong><small>Keep going!</small></article>
+    <div class="dashboard-cards">
+        <article>
+            <span class="stat-icon blue">{{ app_icon("test") }}</span>
+            <div><span>Total tests</span><strong>{{ stats.tests_taken }}</strong><small>+2 this week</small></div>
+        </article>
+        <article>
+            <span class="stat-icon green">{{ app_icon("reports") }}</span>
+            <div><span>Average score</span><strong class="success-text">{{ stats.average_score }}</strong><small>Improving steadily</small></div>
+        </article>
+        <article>
+            <span class="stat-icon amber">{{ app_icon("book") }}</span>
+            <div><span>Materials read</span><strong>{{ stats.materials_read }}</strong><small>3 new this week</small></div>
+        </article>
+        <article>
+            <span class="stat-icon teal">{{ app_icon("bell") }}</span>
+            <div><span>Notifications</span><strong>{{ stats.notifications }}</strong><small>Open updates</small></div>
+        </article>
     </div>
 
     <div class="dashboard-grid">
         <article class="panel performance-panel">
-            <h2>Subject Performance</h2>
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Performance</p>
+                    <h2>Subject Progress</h2>
+                </div>
+                <a href="{{ url_for('student_results') }}">View all</a>
+            </div>
             <div class="progress-row">
                 <span>Mathematics</span>
                 <div class="progress-track"><span style="width: 78%"></span></div>
@@ -44,17 +58,59 @@
                 <div class="progress-track orange"><span style="width: 84%"></span></div>
                 <strong>84%</strong>
             </div>
+            <div class="progress-row">
+                <span>Chemistry</span>
+                <div class="progress-track purple"><span style="width: 62%"></span></div>
+                <strong>62%</strong>
+            </div>
         </article>
 
+        <article class="panel next-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Today</p>
+                    <h2>Next Up</h2>
+                </div>
+            </div>
+            <div class="next-card">
+                <span class="stat-icon amber">{{ app_icon("test") }}</span>
+                <div>
+                    <strong>Mathematics Full Mock</strong>
+                    <span>120 minutes · 100 marks</span>
+                </div>
+            </div>
+            <a class="button button-small" href="{{ url_for('student_mock_tests') }}">{{ app_icon("arrow") }}Continue</a>
+        </article>
+    </div>
+
+    <div class="dashboard-grid lower-grid">
         <article class="panel">
-            <h2>Recent Results</h2>
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Recent</p>
+                    <h2>Results</h2>
+                </div>
+            </div>
             {% for result in recent_results %}
                 <div class="list-row">
                     <span><strong>{{ result.test }}</strong><small>{{ result.date }}</small></span>
                     <strong class="score-pill">{{ result.score }}</strong>
                 </div>
             {% endfor %}
-            <a class="button button-small button-secondary" href="{{ url_for('student_results') }}">View Results</a>
+        </article>
+
+        <article class="panel resource-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Resources</p>
+                    <h2>Quick Access</h2>
+                </div>
+            </div>
+            <div class="action-list">
+                <a href="{{ url_for('student_materials') }}"><span>{{ app_icon("book") }}</span>Study Materials</a>
+                <a href="{{ url_for('student_past_papers') }}"><span>{{ app_icon("files") }}</span>Past Papers</a>
+                <a href="{{ url_for('student_notifications') }}"><span>{{ app_icon("bell") }}</span>Notifications</a>
+            </div>
         </article>
     </div>
 {% endcall %}

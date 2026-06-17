@@ -5,6 +5,7 @@
 {% call admin_shell(title) %}
     <div class="toolbar">
         <a class="button button-small" href="{{ url_for('admin_test_form') }}">Create Test</a>
+        <a class="button button-small button-secondary" href="{{ url_for('admin_test_upload_external') }}">Upload External Test</a>
         <a class="button button-small button-secondary" href="{{ url_for('admin_questions') }}">Manage Questions</a>
     </div>
     <div class="card-grid">
@@ -12,11 +13,19 @@
             <article class="panel">
                 <h2>{{ test.title }}</h2>
                 <p>{{ test.subject }} - {{ test.duration }} minutes - {{ test.marks }} marks</p>
+                {% if test.file_url %}
+                    <p class="test-file-info"><a href="{{ test.file_url }}" target="_blank" rel="noopener">&#128196; Download Test File</a></p>
+                {% endif %}
                 <div class="card-actions">
                     <a href="{{ url_for('admin_test_form') }}">Edit</a>
                     <a href="{{ url_for('student_take_test', test_id=loop.index) }}">Preview</a>
                     <form method="post" action="{{ url_for('admin_delete_test', test_id=loop.index) }}">
-                        {{ delete_icon_button("Delete test") }}
+                        <button class="icon-trash-button" type="submit" aria-label="Delete test" title="Delete test">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-1 6h2v9H8V9Zm6 0h2v9h-2V9Zm-3 0h2v9h-2V9ZM7 9h10l-1 12H8L7 9Z"/>
+                            </svg>
+                            <span class="sr-only">Delete test</span>
+                        </button>
                     </form>
                 </div>
             </article>

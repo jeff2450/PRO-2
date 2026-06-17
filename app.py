@@ -1,6 +1,6 @@
 import os
 import secrets
-from datetime import date
+from datetime import date, datetime
 from functools import wraps
 
 from flask import Flask, redirect, render_template, request, session, url_for
@@ -62,8 +62,8 @@ RECENT_RESULTS = [
 ]
 
 USERS = [
-    {"fullname": "Student User", "email": "student@example.com", "role": "Student"},
-    {"fullname": "Admin User", "email": "admin@example.com", "role": "Administrator"},
+    {"fullname": "Student User", "email": "student@example.com", "role": "Student", "registered": "2026-06-10 14:30"},
+    {"fullname": "Admin User", "email": "admin@example.com", "role": "Administrator", "registered": "2026-06-09 09:15"},
 ]
 
 MATERIALS = [
@@ -81,9 +81,9 @@ PAST_PAPERS = [
 ]
 
 MOCK_TESTS = [
-    {"title": "Mathematics Full Mock", "subject": "Mathematics", "duration": 120, "marks": 100},
-    {"title": "Biology Topic Test", "subject": "Biology", "duration": 60, "marks": 50},
-    {"title": "English Language Mock", "subject": "English", "duration": 90, "marks": 80},
+    {"title": "Mathematics Full Mock", "subject": "Mathematics", "duration": 120, "marks": 100, "file_url": "", "file_name": ""},
+    {"title": "Biology Topic Test", "subject": "Biology", "duration": 60, "marks": 50, "file_url": "", "file_name": ""},
+    {"title": "English Language Mock", "subject": "English", "duration": 90, "marks": 80, "file_url": "", "file_name": ""},
 ]
 
 NOTIFICATIONS = [
@@ -296,7 +296,7 @@ def register():
         fullname = request.form.get("fullname", "Student User").strip() or "Student User"
         email = request.form.get("email", "")
         role = request.form.get("role", "Student")
-        USERS.append({"fullname": fullname, "email": email, "role": role})
+        USERS.append({"fullname": fullname, "email": email, "role": role, "registered": datetime.now().strftime("%Y-%m-%d %H:%M")})
         session["pending_login_role"] = normalize_role(role)
         session["pending_login_email"] = email
         session["pending_login_name"] = fullname
@@ -607,6 +607,8 @@ def admin_test_form():
                 "duration": form_int("duration", 60),
                 "marks": form_int("total_marks", 100),
                 "questions": [],
+                "file_url": save_uploaded_file("upload_file"),
+                "file_name": request.files.get("upload_file").filename if request.files.get("upload_file") and request.files.get("upload_file").filename else "",
             }
         )
         return redirect(url_for("admin_tests"))
@@ -615,12 +617,14 @@ def admin_test_form():
         "admin/form.html",
         title="Create Test",
         submitted=False,
+        has_upload=True,
         return_endpoint="admin_tests",
         fields=[
             {"label": "Test title", "name": "title", "type": "text"},
             {"label": "Subject", "name": "subject", "type": "select", "options": [subject["name"] for subject in SUBJECTS]},
             {"label": "Duration minutes", "name": "duration", "type": "number"},
             {"label": "Total marks", "name": "total_marks", "type": "number"},
+            {"label": "Upload test file", "name": "upload_file", "type": "file", "accept": ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"},
         ],
     )
 
@@ -630,6 +634,40 @@ def admin_test_form():
 def admin_delete_test(test_id):
     delete_by_index(MOCK_TESTS, test_id)
     return redirect(url_for("admin_tests"))
+
+
+@app.route("/admin/tests/upload-external", methods=["GET", "POST"])
+@login_required("admin")
+def admin_test_upload_external():
+    if request.method == "POST":
+        uploaded_file_url = save_uploaded_file("upload_file")
+        MOCK_TESTS.append(
+            {
+                "title": request.form.get("title", "External Test"),
+                "subject": request.form.get("subject", ""),
+                "duration": form_int("duration", 60),
+                "marks": form_int("total_marks", 100),
+                "questions": [],
+                "file_url": uploaded_file_url,
+                "file_name": request.files.get("upload_file").filename if request.files.get("upload_file") and request.files.get("upload_file").filename else "",
+            }
+        )
+        return redirect(url_for("admin_tests"))
+
+    return render_template(
+        "admin/form.html",
+        title="Upload External Test",
+        submitted=False,
+        has_upload=True,
+        return_endpoint="admin_tests",
+        fields=[
+            {"label": "Test title", "name": "title", "type": "text"},
+            {"label": "Subject", "name": "subject", "type": "select", "options": [subject["name"] for subject in SUBJECTS]},
+            {"label": "Duration minutes", "name": "duration", "type": "number"},
+            {"label": "Total marks", "name": "total_marks", "type": "number"},
+            {"label": "Upload test file", "name": "upload_file", "type": "file", "accept": ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"},
+        ],
+    )
 
 
 @app.route("/admin/questions")

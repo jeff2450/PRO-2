@@ -1,57 +1,112 @@
 {% extends "base.html" %}
-{% from "macros.html" import admin_shell with context %}
+{% from "macros.html" import admin_shell, app_icon with context %}
 
 {% block content %}
 {% call admin_shell(title) %}
-    <section class="dashboard-hero">
-        <div class="hero-metrics">
-            <article><strong>1,284</strong><span>Students</span></article>
-            <article><strong>238</strong><span>Materials</span></article>
-            <article><strong>46</strong><span>Mock tests</span></article>
-        </div>
+    <section class="dashboard-header">
         <div>
-            <h1>Welcome back, Admin!</h1>
-            <p>Monitor learner progress, publish resources, and keep exam practice moving.</p>
+            <p class="eyebrow">Admin console</p>
+            <h1>Welcome back, Admin</h1>
+            <p>Manage students, publish exam resources, monitor results, and keep the learning platform current.</p>
         </div>
         <div class="hero-actions">
-            <a class="button hero-button" href="{{ url_for('admin_users') }}"><span aria-hidden="true">+</span>Manage Users</a>
-            <a class="button hero-button" href="{{ url_for('admin_tests') }}"><span aria-hidden="true">#</span>Create Test</a>
+            <a class="button" href="{{ url_for('admin_user_form') }}">{{ app_icon("users") }}Add User</a>
+            <a class="button button-secondary" href="{{ url_for('admin_test_form') }}">{{ app_icon("test") }}Create Test</a>
         </div>
     </section>
 
-    <div class="stats-grid compact dashboard-cards">
-        <article><span>Total students</span><strong>1,284</strong><small>+36 this month</small></article>
-        <article><span>Average score</span><strong class="success-text">81%</strong><small>Across all tests</small></article>
-        <article><span>Top subject</span><strong class="warning-text">Maths</strong><small>Strongest cohort</small></article>
-        <article><span>Active streak</span><strong class="teal-text">14 days</strong><small>New activity daily</small></article>
+    <div class="dashboard-cards">
+        <article>
+            <span class="stat-icon blue">{{ app_icon("users") }}</span>
+            <div><span>Total students</span><strong>1,284</strong><small>+36 this month</small></div>
+        </article>
+        <article>
+            <span class="stat-icon green">{{ app_icon("reports") }}</span>
+            <div><span>Average score</span><strong class="success-text">81%</strong><small>Across all tests</small></div>
+        </article>
+        <article>
+            <span class="stat-icon amber">{{ app_icon("book") }}</span>
+            <div><span>Materials</span><strong>238</strong><small>12 added recently</small></div>
+        </article>
+        <article>
+            <span class="stat-icon teal">{{ app_icon("test") }}</span>
+            <div><span>Mock tests</span><strong>46</strong><small>8 active now</small></div>
+        </article>
     </div>
 
     <div class="dashboard-grid">
         <article class="panel performance-panel">
-            <h2>Subject Performance</h2>
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Performance</p>
+                    <h2>Subject Analytics</h2>
+                </div>
+                <a href="{{ url_for('admin_reports') }}">Reports</a>
+            </div>
             <div class="progress-row">
                 <span>Mathematics</span>
-                <div class="progress-track"><span style="width: 84%"></span></div>
+                <div class="progress-track"><span class="width-84"></span></div>
                 <strong>84%</strong>
             </div>
             <div class="progress-row">
                 <span>English</span>
-                <div class="progress-track teal"><span style="width: 76%"></span></div>
+                <div class="progress-track teal"><span class="width-76"></span></div>
                 <strong>76%</strong>
             </div>
             <div class="progress-row">
                 <span>Biology</span>
-                <div class="progress-track orange"><span style="width: 79%"></span></div>
+                <div class="progress-track orange"><span class="width-79"></span></div>
                 <strong>79%</strong>
+            </div>
+            <div class="progress-row">
+                <span>Chemistry</span>
+                <div class="progress-track purple"><span class="width-72"></span></div>
+                <strong>72%</strong>
+            </div>
+        </article>
+
+        <article class="panel next-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Operations</p>
+                    <h2>Quick Actions</h2>
+                </div>
+            </div>
+            <div class="action-list">
+                <a href="{{ url_for('admin_material_form') }}"><span>{{ app_icon("plus") }}</span>Upload Materials</a>
+                <a href="{{ url_for('admin_paper_form') }}"><span>{{ app_icon("files") }}</span>Add Past Paper</a>
+                <a href="{{ url_for('admin_reports') }}"><span>{{ app_icon("reports") }}</span>View Reports</a>
+            </div>
+        </article>
+    </div>
+
+    <div class="dashboard-grid lower-grid">
+        <article class="panel resource-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Management</p>
+                    <h2>Content Areas</h2>
+                </div>
+            </div>
+            <div class="management-grid">
+                <a href="{{ url_for('admin_subjects') }}"><span>{{ app_icon("layers") }}</span><strong>Subjects</strong><small>Organize learning areas</small></a>
+                <a href="{{ url_for('admin_materials') }}"><span>{{ app_icon("book") }}</span><strong>Materials</strong><small>Publish study resources</small></a>
+                <a href="{{ url_for('admin_questions') }}"><span>{{ app_icon("question") }}</span><strong>Questions</strong><small>Build question banks</small></a>
+                <a href="{{ url_for('admin_users') }}"><span>{{ app_icon("users") }}</span><strong>Users</strong><small>Manage accounts</small></a>
             </div>
         </article>
 
         <article class="panel">
-            <h2>Quick Actions</h2>
-            <div class="action-list">
-                <a href="{{ url_for('admin_materials') }}"><span aria-hidden="true">+</span>Upload Materials</a>
-                <a href="{{ url_for('admin_past_papers') }}"><span aria-hidden="true">#</span>Manage Past Papers</a>
-                <a href="{{ url_for('admin_reports') }}"><span aria-hidden="true">%</span>View Reports</a>
+            <div class="panel-heading">
+                <div>
+                    <p class="eyebrow">Health</p>
+                    <h2>Platform Status</h2>
+                </div>
+            </div>
+            <div class="status-list">
+                <span><strong>Materials library</strong><small>Updated today</small></span>
+                <span><strong>Mock test engine</strong><small>Ready for learners</small></span>
+                <span><strong>Reports</strong><small>Latest scores available</small></span>
             </div>
         </article>
     </div>

@@ -2,7 +2,18 @@
   "changelists": [
     {
       "name": "Default",
-      "files": []
+      "files": [
+        "static/css/styles.css",
+        "templates/admin/dashboard.html",
+        "templates/macros.html",
+        "templates/student/dashboard.html",
+        ".vscode/changelists.json",
+        "app.py",
+        "__pycache__/app.cpython-314.pyc",
+        "templates/admin/users.html",
+        "templates/admin/tests.html",
+        "static/uploads/f870a3ecc6d7-bit_2a.pdf"
+      ]
     }
   ],
   "active": "Default"
