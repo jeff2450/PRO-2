@@ -4,12 +4,136 @@
 {% block content %}
 {% call student_shell(title) %}
     <div class="panel">
-        {% for notification in notifications %}
-            <div class="list-row">
-                <span>{{ notification.message }}</span>
-                <a href="{{ url_for('student_dashboard') }}" class="button button-small">Open</a>
-            </div>
-        {% endfor %}
+        <div id="notifications-container">
+            {% for notification in notifications %}
+                <div class="list-row notification-item" data-notification-id="{{ loop.index }}">
+                    <span>{{ notification.message }}</span>
+                    <a href="{{ url_for('student_dashboard') }}" class="button button-small">Open</a>
+                </div>
+            {% endfor %}
+        </div>
     </div>
+
+    <style>
+        @keyframes slide-in-notification {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .notification-item {
+            animation: slide-in-notification 0.3s ease-out;
+        }
+
+        .notification-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2563eb;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: slide-in-notification 0.3s ease-out;
+            max-width: 400px;
+        }
+
+        .notification-toast button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 12px;
+        }
+
+        .notification-toast button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+
+    <script>
+        let notificationCount = {{ notifications|length }};
+
+        // Connect to live notification stream
+        const eventSource = new EventSource('{{ url_for("notifications_stream") }}');
+
+        eventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+
+                if (data.message && data.count > notificationCount) {
+                    notificationCount = data.count;
+
+                    // Create notification item
+                    const container = document.getElementById('notifications-container');
+                    const newItem = document.createElement('div');
+                    newItem.className = 'list-row notification-item';
+                    newItem.innerHTML = `
+                        <span>${data.message}</span>
+                        <a href="{{ url_for('student_dashboard') }}" class="button button-small">Open</a>
+                    `;
+
+                    // Add to top of list
+                    container.insertBefore(newItem, container.firstChild);
+
+                    // Show toast notification
+                    const toast = document.createElement('div');
+                    toast.className = 'notification-toast';
+                    toast.innerHTML = `
+                        <strong>New Notification</strong><br>
+                        ${data.message}
+                        <button onclick="this.parentElement.remove()">×</button>
+                    `;
+                    document.body.appendChild(toast);
+
+                    // Auto-remove toast after 5 seconds
+                    setTimeout(() => {
+                        if (toast.parentElement) {
+                            toast.remove();
+                        }
+                    }, 5000);
+
+                    // Browser notification if supported
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification('ExamPrep Pro', {
+                            body: data.message,
+                            icon: '{{ url_for("static", filename="img/logo.png") }}'
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing notification:', e);
+            }
+        };
+
+        eventSource.onerror = function(event) {
+            console.error('EventSource error:', event);
+            eventSource.close();
+
+            // Attempt to reconnect after 5 seconds
+            setTimeout(() => {
+                location.reload();
+            }, 5000);
+        };
+
+        // Request browser notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Close connection when leaving page
+        window.addEventListener('beforeunload', () => {
+            eventSource.close();
+        });
+    </script>
 {% endcall %}
 {% endblock %}

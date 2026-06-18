@@ -1343,12 +1343,12 @@ body.app-page {
     gap: 6px;
     min-height: 100vh;
     border: 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0;
     padding: 24px 18px;
     background:
-        linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.98)),
-        #111827;
+        linear-gradient(180deg, rgba(45, 62, 127, 0.98), rgba(35, 52, 117, 0.98)),
+        #2d3e7f;
     box-shadow: 14px 0 40px rgba(16, 24, 40, 0.12);
 }
 
@@ -1360,7 +1360,7 @@ body.app-page {
     margin-bottom: 26px;
     padding: 0 8px;
     color: #ffffff;
-    font-size: 1.08rem;
+    font-size: 0.95rem;
     font-weight: 900;
 }
 
@@ -1385,7 +1385,7 @@ body.app-page {
 
 .side-kicker {
     margin: 0 8px 10px;
-    color: #94a3b8;
+    color: rgba(255, 255, 255, 0.6);
     font-size: 0.72rem;
     font-weight: 900;
     letter-spacing: 0.08em;
@@ -1400,15 +1400,15 @@ body.app-page {
     border: 1px solid transparent;
     border-radius: 12px;
     padding: 11px 12px;
-    color: #cbd5e1;
-    font-size: 0.94rem;
+    color: #ffffff;
+    font-size: 0.88rem;
     font-weight: 800;
 }
 
 .app-page .side-nav a:hover,
 .app-page .side-nav a.is-active {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.14);
     border-color: rgba(255, 255, 255, 0.12);
     text-decoration: none;
 }
@@ -2036,15 +2036,15 @@ body.app-page {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 8px;
+    gap: 4px;
     text-align: right;
     border-left: 2px solid rgba(255, 255, 255, 0.3);
-    padding-left: 24px;
-    min-width: 200px;
+    padding-left: 16px;
+    min-width: 140px;
 }
 
 .timer-display-large span {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.85);
     font-weight: 600;
     text-transform: uppercase;
@@ -2052,7 +2052,7 @@ body.app-page {
 }
 
 .timer-display-large strong {
-    font-size: 2.5rem;
+    font-size: 1.6rem;
     color: #ffffff;
     font-family: 'Courier New', monospace;
     letter-spacing: 0.05em;

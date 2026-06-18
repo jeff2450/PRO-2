@@ -3,6 +3,9 @@ import secrets
 import sqlite3
 import json
 from datetime import date, datetime, timedelta
+from flask import Response
+import queue
+import threading
 from functools import wraps
 
 from flask import Flask, g, redirect, render_template, request, session, url_for, jsonify
@@ -12,6 +15,9 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
+
+# Notification system for live updates
+notification_queue = queue.Queue()
 app.config["DATABASE"] = os.environ.get("DATABASE") or os.path.join(app.instance_path, "examprep.sqlite3")
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(app.instance_path, exist_ok=True)
@@ -1280,6 +1286,8 @@ def student_submit_test(test_id):
         else:
             score = "0%"
             
+    time_left_seconds = (test.get("duration", 60) * 60) - elapsed_seconds
+
     RECENT_RESULTS.insert(
         0,
         {
@@ -1287,6 +1295,7 @@ def student_submit_test(test_id):
             "score": score,
             "date": datetime.now().isoformat(),
             "time_spent": format_elapsed_time(elapsed_seconds),
+            "time_left": format_elapsed_time(max(0, time_left_seconds)),
         },
     )
     
@@ -1372,6 +1381,32 @@ def student_notifications():
         title="Notifications",
         notifications=NOTIFICATIONS,
     )
+
+
+@app.route("/student/notifications/stream")
+@login_required("student")
+def notifications_stream():
+    def generate():
+        # Send current notification count
+        yield f"data: {{'count': {len(NOTIFICATIONS)}}}\n\n"
+
+        # Keep connection open and listen for new notifications
+        last_count = len(NOTIFICATIONS)
+        while True:
+            try:
+                current_count = len(NOTIFICATIONS)
+                if current_count > last_count:
+                    new_notif = NOTIFICATIONS[0]
+                    yield f"data: {{'message': '{new_notif}', 'count': {current_count}}}\n\n"
+                    last_count = current_count
+
+                # Check every second
+                import time
+                time.sleep(1)
+            except GeneratorExit:
+                break
+
+    return Response(generate(), mimetype="text/event-stream")
 
 
 @app.route("/admin/dashboard")
@@ -1627,39 +1662,59 @@ def admin_delete_paper(paper_id):
 @app.route("/admin/tests")
 @login_required("admin")
 def admin_tests():
-    return render_template("admin/tests.html", title="Manage Tests", tests=MOCK_TESTS)
+    return render_template("admin/tests.html", title="Manage Tests", tests=MOCK_TESTS, subjects=SUBJECTS)
 
 
 @app.route("/admin/tests/new", methods=["GET", "POST"])
+@app.route("/admin/tests/<int:test_id>/edit", methods=["GET", "POST"])
 @login_required("admin")
-def admin_test_form():
+def admin_test_form(test_id=None):
+    test = MOCK_TESTS.get(test_id) if test_id else None
+
     if request.method == "POST":
-        MOCK_TESTS.append(
-            {
-                "title": form_text("title", "New Test") or "New Test",
-                "subject": form_text("subject"),
-                "duration": form_int("duration", 60),
-                "marks": form_int("total_marks", 100),
+        title = form_text("title", "New Test") or "New Test"
+        subject = form_text("subject")
+        duration = form_int("duration", 60)
+        marks = form_int("total_marks", 100)
+
+        if test_id:
+            test["title"] = title
+            test["subject"] = subject
+            test["duration"] = duration
+            test["marks"] = marks
+
+            if request.files.get("upload_file"):
+                test["file_url"] = save_uploaded_file("upload_file")
+                test["file_name"] = request.files.get("upload_file").filename
+        else:
+            test_data = {
+                "title": title,
+                "subject": subject,
+                "duration": duration,
+                "marks": marks,
                 "questions": [],
-                "file_url": save_uploaded_file("upload_file"),
-                "file_name": request.files.get("upload_file").filename if request.files.get("upload_file") and request.files.get("upload_file").filename else "",
+                "file_url": save_uploaded_file("upload_file") if request.files.get("upload_file") else "",
+                "file_name": request.files.get("upload_file").filename if request.files.get("upload_file") else "",
             }
-        )
+            MOCK_TESTS.append(test_data)
+
         return redirect(url_for("admin_tests"))
+
+    fields = [
+        {"label": "Test title", "name": "title", "type": "text", "value": test.get("title") if test else ""},
+        {"label": "Subject", "name": "subject", "type": "select", "options": [subject["name"] for subject in SUBJECTS], "value": test.get("subject") if test else ""},
+        {"label": "Duration minutes", "name": "duration", "type": "number", "value": test.get("duration", 60) if test else 60},
+        {"label": "Total marks", "name": "total_marks", "type": "number", "value": test.get("marks", 100) if test else 100},
+        {"label": "Upload test file", "name": "upload_file", "type": "file", "accept": ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"},
+    ]
 
     return render_template(
         "admin/form.html",
-        title="Create Test",
+        title="Edit Test" if test else "Create Test",
         submitted=False,
         has_upload=True,
         return_endpoint="admin_tests",
-        fields=[
-            {"label": "Test title", "name": "title", "type": "text"},
-            {"label": "Subject", "name": "subject", "type": "select", "options": [subject["name"] for subject in SUBJECTS]},
-            {"label": "Duration minutes", "name": "duration", "type": "number"},
-            {"label": "Total marks", "name": "total_marks", "type": "number"},
-            {"label": "Upload test file", "name": "upload_file", "type": "file", "accept": ".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"},
-        ],
+        fields=fields,
     )
 
 
@@ -1830,6 +1885,13 @@ def admin_delete_report_remark(result_id):
     result = RECENT_RESULTS.get(result_id)
     if result:
         RECENT_RESULTS.update_field(result_id, "remark", "")
+    return redirect(url_for("admin_reports"))
+
+
+@app.route("/admin/reports/<int:result_id>/delete", methods=["POST"])
+@login_required("admin")
+def admin_delete_result(result_id):
+    delete_by_id(RECENT_RESULTS, result_id)
     return redirect(url_for("admin_reports"))
 
 
