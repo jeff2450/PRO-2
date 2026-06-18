@@ -18,19 +18,19 @@
     <div class="dashboard-cards">
         <article>
             <span class="stat-icon blue">{{ app_icon("users") }}</span>
-            <div><span>Total students</span><strong>1,284</strong><small>+36 this month</small></div>
+            <div><span>Total students</span><strong>{{ data.total_students }}</strong><small>+{{ data.new_students }} this month</small></div>
         </article>
         <article>
             <span class="stat-icon green">{{ app_icon("reports") }}</span>
-            <div><span>Average score</span><strong class="success-text">81%</strong><small>Across all tests</small></div>
+            <div><span>Average score</span><strong class="success-text">{{ data.avg_score }}%</strong><small>Across all tests</small></div>
         </article>
         <article>
             <span class="stat-icon amber">{{ app_icon("book") }}</span>
-            <div><span>Materials</span><strong>238</strong><small>12 added recently</small></div>
+            <div><span>Materials</span><strong>{{ data.materials_count }}</strong><small>Available resources</small></div>
         </article>
         <article>
             <span class="stat-icon teal">{{ app_icon("test") }}</span>
-            <div><span>Mock tests</span><strong>46</strong><small>8 active now</small></div>
+            <div><span>Mock tests</span><strong>{{ data.tests_count }}</strong><small>{{ data.active_tests }} active now</small></div>
         </article>
     </div>
 
@@ -43,26 +43,21 @@
                 </div>
                 <a href="{{ url_for('admin_reports') }}">Reports</a>
             </div>
-            <div class="progress-row">
-                <span>Mathematics</span>
-                <div class="progress-track"><span class="width-84"></span></div>
-                <strong>84%</strong>
-            </div>
-            <div class="progress-row">
-                <span>English</span>
-                <div class="progress-track teal"><span class="width-76"></span></div>
-                <strong>76%</strong>
-            </div>
-            <div class="progress-row">
-                <span>Biology</span>
-                <div class="progress-track orange"><span class="width-79"></span></div>
-                <strong>79%</strong>
-            </div>
-            <div class="progress-row">
-                <span>Chemistry</span>
-                <div class="progress-track purple"><span class="width-72"></span></div>
-                <strong>72%</strong>
-            </div>
+            {% if data.subject_analytics %}
+                {% for subject in data.subject_analytics %}
+                    <div class="progress-row">
+                        <span>{{ subject.subject }}</span>
+                        <div class="progress-track"><span style="width: {{ subject.avg_score }}%"></span></div>
+                        <strong>{{ "%.0f"|format(subject.avg_score) }}%</strong>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="progress-row">
+                    <span>No data available</span>
+                    <div class="progress-track"><span class="width-50"></span></div>
+                    <strong>-</strong>
+                </div>
+            {% endif %}
         </article>
 
         <article class="panel next-panel">

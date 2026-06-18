@@ -43,26 +43,21 @@
                 </div>
                 <a href="{{ url_for('student_results') }}">View all</a>
             </div>
-            <div class="progress-row">
-                <span>Mathematics</span>
-                <div class="progress-track"><span style="width: 78%"></span></div>
-                <strong>78%</strong>
-            </div>
-            <div class="progress-row">
-                <span>English</span>
-                <div class="progress-track teal"><span style="width: 70%"></span></div>
-                <strong>70%</strong>
-            </div>
-            <div class="progress-row">
-                <span>Biology</span>
-                <div class="progress-track orange"><span style="width: 84%"></span></div>
-                <strong>84%</strong>
-            </div>
-            <div class="progress-row">
-                <span>Chemistry</span>
-                <div class="progress-track purple"><span style="width: 62%"></span></div>
-                <strong>62%</strong>
-            </div>
+            {% if subject_analytics %}
+                {% for subject in subject_analytics %}
+                    <div class="progress-row">
+                        <span>{{ subject.subject }}</span>
+                        <div class="progress-track"><span style="width: {{ subject.avg_score }}%"></span></div>
+                        <strong>{{ "%.0f"|format(subject.avg_score) }}%</strong>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="progress-row">
+                    <span>No results yet</span>
+                    <div class="progress-track"><span style="width: 0%"></span></div>
+                    <strong>-</strong>
+                </div>
+            {% endif %}
         </article>
 
         <article class="panel next-panel">
@@ -72,13 +67,23 @@
                     <h2>Next Up</h2>
                 </div>
             </div>
-            <div class="next-card">
-                <span class="stat-icon amber">{{ app_icon("test") }}</span>
-                <div>
-                    <strong>Mathematics Full Mock</strong>
-                    <span>120 minutes · 100 marks</span>
+            {% if next_test %}
+                <div class="next-card">
+                    <span class="stat-icon amber">{{ app_icon("test") }}</span>
+                    <div>
+                        <strong>{{ next_test.title }}</strong>
+                        <span>{{ next_test.duration }} minutes · {{ next_test.marks }} marks</span>
+                    </div>
                 </div>
-            </div>
+            {% else %}
+                <div class="next-card">
+                    <span class="stat-icon amber">{{ app_icon("test") }}</span>
+                    <div>
+                        <strong>No tests available</strong>
+                        <span>Check back soon</span>
+                    </div>
+                </div>
+            {% endif %}
             <a class="button button-small" href="{{ url_for('student_mock_tests') }}">{{ app_icon("arrow") }}Continue</a>
         </article>
     </div>

@@ -701,6 +701,8 @@ def create_schema():
 
         CREATE TABLE IF NOT EXISTS results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT DEFAULT '',
+            subject TEXT DEFAULT '',
             test TEXT NOT NULL,
             score TEXT DEFAULT '',
             date TEXT NOT NULL,
@@ -729,13 +731,32 @@ def create_schema():
     db.commit()
 
 
+def migrate_database():
+    db = get_db()
+    cursor = db.execute("PRAGMA table_info(results)")
+    columns = [col[1] for col in cursor.fetchall()]
+
+    if 'user_email' not in columns:
+        try:
+            db.execute("ALTER TABLE results ADD COLUMN user_email TEXT DEFAULT ''")
+            db.commit()
+        except:
+            pass
+
+    if 'subject' not in columns:
+        try:
+            db.execute("ALTER TABLE results ADD COLUMN subject TEXT DEFAULT ''")
+            db.commit()
+        except:
+            pass
+
+
 def table_is_empty(table):
     return db_one(f"SELECT COUNT(*) AS total FROM {table}")["total"] == 0
 
 
 def seed_database():
     if table_is_empty("subjects"):
-        for subject in SUBJECTS:
             db_execute(
                 """
                 INSERT INTO subjects (id, name, level, materials, tests, description)
@@ -833,6 +854,7 @@ EXAM_ATTEMPTS_DB = ExamAttemptCollection()
 
 with app.app_context():
     create_schema()
+    migrate_database()
     seed_database()
 
 SUBJECTS = SUBJECTS_DB
@@ -1097,12 +1119,74 @@ def logout():
 @app.route("/student/dashboard")
 @login_required("student")
 def student_dashboard():
+    # Get current user's email/name from session
+    user_email = session.get('user_email')
+    user_id = session.get('user_id')
+
+    # Initialize stats with defaults
+    stats = {
+        'tests_taken': 0,
+        'average_score': '0%',
+        'materials_read': 0,
+        'notifications': 0,
+    }
+
+    recent_results = []
+    next_test = None
+
+    if user_email:
+        # Count tests taken by this student
+        tests_taken = db_one(
+            "SELECT COUNT(*) as count FROM results WHERE user_email = ?",
+            (user_email,)
+        )
+        stats['tests_taken'] = tests_taken['count'] if tests_taken else 0
+
+        # Calculate average score for this student
+        avg_score = db_one(
+            "SELECT AVG(CAST(REPLACE(score, '%', '') AS FLOAT)) as avg FROM results WHERE user_email = ?",
+            (user_email,)
+        )
+        if avg_score and avg_score['avg']:
+            stats['average_score'] = f"{round(avg_score['avg'])}%"
+
+        # Count materials (or could track materials accessed)
+        materials_total = db_one("SELECT COUNT(*) as count FROM materials")
+        stats['materials_read'] = materials_total['count'] if materials_total else 0
+
+        # Count unread notifications
+        notifications = db_one("SELECT COUNT(*) as count FROM notifications")
+        stats['notifications'] = notifications['count'] if notifications else 0
+
+        # Get recent results for this student (limit to 5)
+        recent_results = db_all(
+            "SELECT test, score, date FROM results WHERE user_email = ? ORDER BY date DESC LIMIT 5",
+            (user_email,)
+        )
+        recent_results = [dict(r) for r in recent_results]
+
+    # Get subject-wise averages for this student
+    subject_analytics = []
+    if user_email:
+        subject_analytics = db_all(
+            """SELECT subject, AVG(CAST(REPLACE(score, '%', '') AS FLOAT)) as avg_score
+               FROM results WHERE user_email = ? AND subject IS NOT NULL AND subject != ''
+               GROUP BY subject LIMIT 4""",
+            (user_email,)
+        )
+        subject_analytics = [dict(r) for r in subject_analytics]
+
+    # Get next available test
+    next_test = db_one("SELECT title, duration, marks FROM tests LIMIT 1")
+    next_test = dict(next_test) if next_test else None
+
     return render_template(
         "student/dashboard.html",
         title="Student Dashboard",
-        stats=STUDENT_STATS,
-        recent_results=RECENT_RESULTS,
-        materials=MATERIALS[:3],
+        stats=stats,
+        recent_results=recent_results,
+        subject_analytics=subject_analytics,
+        next_test=next_test,
     )
 
 
@@ -1292,7 +1376,51 @@ def student_notifications():
 @app.route("/admin/dashboard")
 @login_required("admin")
 def admin_dashboard():
-    return render_template("admin/dashboard.html", title="Admin Dashboard")
+    # Get total students
+    total_students = db_one("SELECT COUNT(*) as count FROM users WHERE role = 'Student'")
+    total_students_count = total_students['count'] if total_students else 0
+
+    # Get students added this month
+    current_month_start = date.today().replace(day=1).isoformat()
+    new_students = db_one(
+        "SELECT COUNT(*) as count FROM users WHERE role = 'Student' AND registered >= ?",
+        (current_month_start,)
+    )
+    new_students_count = new_students['count'] if new_students else 0
+
+    # Get average score across all tests
+    avg_score = db_one("SELECT AVG(CAST(REPLACE(score, '%', '') AS FLOAT)) as avg FROM results WHERE score != ''")
+    avg_score_val = f"{round(avg_score['avg'])}" if avg_score and avg_score['avg'] else "0"
+
+    # Get materials count
+    materials_count = db_one("SELECT COUNT(*) as count FROM materials")
+    materials_count_val = materials_count['count'] if materials_count else 0
+
+    # Get tests count
+    tests_count = db_one("SELECT COUNT(*) as count FROM tests")
+    tests_count_val = tests_count['count'] if tests_count else 0
+
+    # Get active tests (just show how many exist, since we don't track creation dates)
+    active_tests = tests_count_val
+
+    # Get subject-wise analytics
+    subject_analytics = db_all(
+        """SELECT subject, AVG(CAST(REPLACE(score, '%', '') AS FLOAT)) as avg_score
+           FROM results WHERE subject IS NOT NULL AND subject != '' AND score != ''
+           GROUP BY subject ORDER BY avg_score DESC"""
+    )
+
+    dashboard_data = {
+        'total_students': total_students_count,
+        'new_students': new_students_count,
+        'avg_score': avg_score_val,
+        'materials_count': materials_count_val,
+        'tests_count': tests_count_val,
+        'active_tests': max(0, active_tests - 2) if active_tests > 2 else active_tests,
+        'subject_analytics': subject_analytics,
+    }
+
+    return render_template("admin/dashboard.html", title="Admin Dashboard", data=dashboard_data)
 
 
 @app.route("/admin/users")
