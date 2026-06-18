@@ -757,6 +757,7 @@ def table_is_empty(table):
 
 def seed_database():
     if table_is_empty("subjects"):
+        for subject in SUBJECTS:
             db_execute(
                 """
                 INSERT INTO subjects (id, name, level, materials, tests, description)
