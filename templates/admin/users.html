@@ -19,7 +19,7 @@
                         <td>{{ user.registered }}</td>
                         <td>
                             <div class="row-actions">
-                                <a href="{{ url_for('admin_user_form') }}">Edit</a>
+                                <a href="{{ url_for('admin_user_form') }}"class="button button-small">Edit</a>
                                 <form method="post" action="{{ url_for('admin_delete_user', user_id=user.id) }}">
                                     {{ delete_icon_button("Delete user") }}
                                 </form>

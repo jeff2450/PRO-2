@@ -1215,3 +1215,5 @@ Account{name=..., path=..., type=PREDICT}
 2026-06-17 23:42:52.940 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/JEFF-PC/Documents/PRO-2/templates/admin)
 2026-06-17 23:44:42.065 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/JEFF-PC/Documents/PRO-2/templates/admin)
 2026-06-17 23:49:15.726 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/JEFF-PC/Documents/PRO-2/templates/admin)
+2026-06-17 23:52:29.687 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(C:/Users/JEFF-PC/Documents/PRO-2/templates/admin)
+2026-06-17 23:53:19.740 [main] WARN  com.rs.mv.mvvs.Startup - [LSP:100104]ROCKET MV BASIC EXTENSION exited

@@ -28,8 +28,8 @@
                         <td>{{ paper.paper }}</td>
                         <td>
                             {% set source = paper.source_url or paper.file_url %}
-                            <a href="{{ source or url_for('student_past_papers') }}" {% if source %}target="_blank" rel="noopener"{% endif %}>View</a>
-                            <a href="{{ source or url_for('student_past_papers') }}" {% if source %}target="_blank" rel="noopener"{% endif %}>Download</a>
+                            <a href="{{ source or url_for('student_past_papers') }}" {% if source %}target="_blank" rel="noopener"{% endif %}class="button button-small">View</a>
+                            <a href="{{ source or url_for('student_past_papers') }}" {% if source %}target="_blank" rel="noopener"{% endif %}class="button button-small">Download</a>
                         </td>
                     </tr>
                 {% endfor %}

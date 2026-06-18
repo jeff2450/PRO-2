@@ -12,8 +12,8 @@
                         <td>{{ result.test }}</td>
                         <td>{{ result.score }}</td>
                         <td>{{ result.time_spent|default("-") }}</td>
-                        <td>{{ result.date }}</td>
-                        <td><a href="{{ url_for('student_mock_tests') }}">Retake related test</a></td>
+                        <td>{{ result.date[:10] }}</td>
+                        <td><a href="{{ url_for('student_mock_tests') }}" class="button button-small">Retake related test</a></td>
                     </tr>
                 {% endfor %}
             </tbody>

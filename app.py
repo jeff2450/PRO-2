@@ -1285,7 +1285,7 @@ def student_submit_test(test_id):
         {
             "test": test["title"],
             "score": score,
-            "date": date.today().isoformat(),
+            "date": datetime.now().isoformat(),
             "time_spent": format_elapsed_time(elapsed_seconds),
         },
     )

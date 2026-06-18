@@ -18,7 +18,7 @@
                         <td>{{ material.type }}</td>
                         <td>
                             {% set source = material.source_url or material.file_url %}
-                            <a href="{{ source or url_for('student_materials') }}" {% if source %}target="_blank" rel="noopener"{% endif %}>View online</a>
+                            <a href="{{ source or url_for('student_materials') }}" {% if source %}target="_blank" rel="noopener"{% endif %} class="button button-small">View online</a>
                         </td>
                     </tr>
                 {% endfor %}

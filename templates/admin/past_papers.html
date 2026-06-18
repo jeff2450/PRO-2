@@ -19,14 +19,14 @@
                         <td>
                             {% set source = paper.source_url or paper.file_url %}
                             {% if source %}
-                                <a href="{{ source }}" target="_blank" rel="noopener">Open</a>
+                                <a href="{{ source }}" target="_blank" rel="noopener"class="button button-small">Open</a>
                             {% else %}
                                 <span class="muted-text">None</span>
                             {% endif %}
                         </td>
                         <td>
                             <div class="row-actions">
-                                <a href="{{ url_for('admin_paper_form') }}">Edit</a>
+                                <a href="{{ url_for('admin_paper_form') }}"class="button button-small">Edit</a>
                                 <form method="post" action="{{ url_for('admin_delete_paper', paper_id=paper.id) }}">
                                     {{ delete_icon_button("Delete paper") }}
                                 </form>

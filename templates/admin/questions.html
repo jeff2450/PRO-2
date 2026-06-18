@@ -11,7 +11,7 @@
         {% for test in tests %}
             <div class="list-row">
                 <span>{{ test.title }} <small>{{ test.questions|default([])|length }} questions</small></span>
-                <a href="{{ url_for('admin_question_form', test_id=test.id) }}">Manage questions</a>
+                <a href="{{ url_for('admin_question_form', test_id=test.id) }}"class="button button-small">Manage questions</a>
             </div>
             {% set test_id = test.id %}
             {% for question in test.questions|default([]) %}
@@ -24,7 +24,7 @@
                         {% endif %}
                     </span>
                     <div class="card-actions">
-                        <a href="{{ url_for('admin_edit_question', test_id=test_id, question_id=question.id) }}">Edit</a>
+                        <a href="{{ url_for('admin_edit_question', test_id=test_id, question_id=question.id) }}"class="button button-small">Edit</a>
                         <form method="post" action="{{ url_for('admin_delete_question', test_id=test_id, question_id=question.id) }}">
                             {{ delete_icon_button("Delete question") }}
                         </form>
