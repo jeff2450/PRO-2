@@ -3,27 +3,7 @@
     {
       "name": "Default",
       "files": [
-        "app.py",
-        ".vscode/changelists.json",
-        "__pycache__/app.cpython-314.pyc",
-        "static/css/styles.css",
-        "static/js/main.js",
-        "templates/admin/form.html",
-        "templates/admin/materials.html",
-        "templates/admin/past_papers.html",
-        "templates/admin/questions.html",
-        "templates/admin/reports.html",
-        "templates/admin/tests.html",
-        "templates/admin/users.html",
-        "templates/login.html",
-        "templates/student/materials.html",
-        "templates/student/mock_tests.html",
-        "templates/student/notifications.html",
-        "templates/student/past_papers.html",
-        "templates/student/profile.html",
-        "templates/student/take_test.html",
-        ".vscode/settings.json",
-        "instance/examprep.sqlite3"
+        ".vscode/changelists.json"
       ]
     }
   ],
